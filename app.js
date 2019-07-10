@@ -1,5 +1,7 @@
-const { port, token, signingSecret} = require('./config')
+const { port, token, signingSecret } = require('./config');
 const { App } = require('@slack/bolt');
+var firebase = require('firebase/app');
+require('firebase/firestore');
 
 
 // Initializes your app with your bot token and signing secret
