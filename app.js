@@ -21,7 +21,9 @@ var firebaseConfig = {
     storageBucket: "",
     messagingSenderId: firebaseMessagingSenderId,
     appId: firebaseAppId
-  };
+};
+
+firebase.initializeApp(firebaseConfig)
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
