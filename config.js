@@ -2,6 +2,12 @@ require('dotenv').config({path: __dirname + '/variables.env'})
 
 module.exports = {
     port: process.env.PORT,
-    token: process.env.SLACK_BOT_TOKEN,
-    signingSecret: process.env.SLACK_SIGNING_SECRET
+    slackToken: process.env.SLACK_BOT_TOKEN,
+    slackSigningSecret: process.env.SLACK_SIGNING_SECRET,
+    firebaseApiKey: process.env.FIREBASE_API_KEY,
+    firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    firebaseDatabaseUrl: process.env.FIREBASE_DATABASE_URL,
+    firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
+    firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    firebaseAppId: process.env.FIREBASE_APP_ID,
 }
