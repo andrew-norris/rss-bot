@@ -1,13 +1,32 @@
-const { port, token, signingSecret } = require('./config');
+const { 
+    port, 
+    slackToken, 
+    slackSigningSecret,
+    firebaseApiKey,
+    firebaseAuthDomain,
+    firebaseDatabaseUrl,
+    firebaseProjectId,
+    firebaseMessagingSenderId,
+    firebaseAppId
+} = require('./config');
 const { App } = require('@slack/bolt');
 var firebase = require('firebase/app');
 require('firebase/firestore');
 
+var firebaseConfig = {
+    apiKey: firebaseApiKey,
+    authDomain: firebaseAuthDomain,
+    databaseURL: firebaseDatabaseUrl,
+    projectId: firebaseProjectId,
+    storageBucket: "",
+    messagingSenderId: firebaseMessagingSenderId,
+    appId: firebaseAppId
+  };
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
-    token: token,
-    signingSecret: signingSecret
+    token: slackToken,
+    signingSecret: slackSigningSecret
 });
 
 (async () => {
