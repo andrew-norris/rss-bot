@@ -147,3 +147,53 @@ expressApp.post('/topics', (req, res) => {
 
   res.send("It Worked").status(200).end()
 });
+
+
+
+let Parser = require('rss-parser')
+let parser = new Parser()
+
+const rssUrl = "https://news.google.com/rss/search?hl=en-CA&gl=CA&ceid=CA:en"
+
+
+expressApp.get('/feed/post', (req, res) => {
+  (async () => {
+    await firestore.collection('topics').get()
+      .then(querySnapshot => {
+        querySnapshot.docs.forEach(doc => {
+          console.log("are we here")
+          console.log(doc.data().topics)
+          let topics = doc.data().topics
+          var url = rssUrl + "&q="
+          console.log(topics)
+          topics.forEach(function(topic) {
+            url += topic + ","
+          });
+          (async () => {
+            let feed = await parser.parseURL(url)
+            .then(feed => {
+              (async () => {
+              await firestore.collection('channels').where('topics', 'array-contains', topics[0]).get()
+                .then(querySnapshot => {
+                  querySnapshot.docs.forEach(channel => {
+                    console.log("channel.data().url")
+                    var options = {
+                      uri: channel.data().url,
+                      method: 'POST',
+                      json: {'text': feed.items[0].title}
+                    }
+                    request.post(options, (error, response, body) => {              
+                      res.send("Success!")
+                    });
+                  })
+                })
+                .catch(err => console.log(err))
+              })();
+            })
+            .catch(err => console.log(err))
+          })();
+        });
+      })
+      .catch(err => console.log(err))
+  })();
+});
