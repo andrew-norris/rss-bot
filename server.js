@@ -134,16 +134,16 @@ expressApp.post('/topics', (req, res) => {
   })
 
   let topicRef = firestore.collection('topics').doc(docName)
-
-  let setTopic = topicRef.set({
-    topics: topics
-  })
-
   let channelRef = firestore.collection('channels').doc(req.fields.channel_id)
 
-  let setChannel = channelRef.update(
-    {topics: topics}
-  )
+  let topic = topicRef.set({})
+
+  topics.forEach(function(topic) {
+    var updates = {};
+    updates[`topics.${topic}`] = true
+    topicRef.update(updates)
+    channelRef.update(updates)
+  })
 
   res.send("It Worked").status(200).end()
 });
