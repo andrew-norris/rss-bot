@@ -138,12 +138,12 @@ expressApp.post('/topics', (req, res) => {
 
   let topic = topicRef.set({})
 
+  var updates = {};
   topics.forEach(function(topic) {
-    var updates = {};
     updates[`topics.${topic}`] = true
-    topicRef.update(updates)
-    channelRef.update(updates)
   })
+  topicRef.update(updates)
+  channelRef.update(updates)
 
   res.send("It Worked").status(200).end()
 });
@@ -163,37 +163,50 @@ expressApp.get('/feed/post', (req, res) => {
         querySnapshot.docs.forEach(doc => {
           console.log("are we here")
           console.log(doc.data().topics)
-          let topics = doc.data().topics
+          let topics = Object.keys(doc.data().topics)
           var url = rssUrl + "&q="
-          console.log(topics)
-          topics.forEach(function(topic) {
-            url += topic + ","
-          });
+          for (let key of topics) {
+            console.log(key)
+            url += key + ","
+          }
           (async () => {
+            console.log(url);
             let feed = await parser.parseURL(url)
-            .then(feed => {
-              (async () => {
-              await firestore.collection('channels').where('topics', 'array-contains', topics[0]).get()
-                .then(querySnapshot => {
-                  querySnapshot.docs.forEach(channel => {
-                    console.log("channel.data().url")
-                    var options = {
-                      uri: channel.data().url,
-                      method: 'POST',
-                      json: {'text': feed.items[0].title}
-                    }
-                    request.post(options, (error, response, body) => {              
-                      res.send("Success!")
-                    });
-                  })
-                })
-                .catch(err => console.log(err))
-              })();
-            })
-            .catch(err => console.log(err))
+              .then(feed => {
+                (async () => {
+                  console.log("we got the feed")
+                  console.log(topics)
+                  var query = firestore.collection('channels')
+                  for (let key of topics) {
+                    query = query.where(`topics.${key}`, '==', true)
+                  }
+                  await query.get()
+                    .then(querySnapshot => {
+                      querySnapshot.docs.forEach(channel => {
+                        console.log(channel.data().channel)
+                        console.log(Object.keys(channel.data().topics).length)
+                        console.log(topics.length)
+                        if (Object.keys(channel.data().topics).length == topics.length) {
+                          
+                          var options = {
+                            uri: channel.data().url,
+                            method: 'POST',
+                            json: {'text': feed.items[0].title}
+                          }
+                          request.post(options, (error, response, body) => {              
+                            // res.send('Success!')
+                          });
+                        }
+                      })
+                    })
+                    .catch(err => console.log(err))
+                })();
+              })
+              .catch(err => console.log(err))
           })();
         });
       })
       .catch(err => console.log(err))
   })();
+  res.send("Success!")
 });
