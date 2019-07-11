@@ -159,11 +159,13 @@ const rssUrl = "https://news.google.com/rss/search?hl=en-CA&gl=CA&ceid=CA:en"
 expressApp.get('/feed/post', (req, res) => {
   (async () => {
     await firestore.collection('topics').get()
-      .then(querySnapshot => {
-        querySnapshot.docs.forEach(doc => {
+      .then(topicQuerySnapshot => {
+        topicQuerySnapshot.docs.forEach(topicDoc => {
           console.log("are we here")
-          console.log(doc.data().topics)
-          let topics = Object.keys(doc.data().topics)
+          console.log(topicDoc.data().topics)
+          let topics = Object.keys(topicDoc.data().topics)
+          let lastCheckedDate = topicDoc.data().lastCheckedDate
+          console.log(lastCheckedDate)
           var url = rssUrl + "&q="
           for (let key of topics) {
             console.log(key)
@@ -181,15 +183,17 @@ expressApp.get('/feed/post', (req, res) => {
                     query = query.where(`topics.${key}`, '==', true)
                   }
                   await query.get()
-                    .then(querySnapshot => {
-                      querySnapshot.docs.forEach(channel => {
-                        console.log(channel.data().channel)
-                        console.log(Object.keys(channel.data().topics).length)
+                    .then(channelQuerySnapshot => {
+                      channelQuerySnapshot.docs.forEach(channelDoc => {
+                        console.log(channelDoc.data().channel)
+                        console.log(Object.keys(channelDoc.data().topics).length)
                         console.log(topics.length)
-                        if (Object.keys(channel.data().topics).length == topics.length) {
+                        if (Object.keys(channelDoc.data().topics).length == topics.length) {
+
+                          console.log(Date.parse(feed.items[0].pubDate) > Date.parse(feed.items[1].pubDate))
                           
                           var options = {
-                            uri: channel.data().url,
+                            uri: channelDoc.data().url,
                             method: 'POST',
                             json: {'text': feed.items[0].title}
                           }
