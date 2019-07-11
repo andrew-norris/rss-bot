@@ -1,39 +1,11 @@
-const { 
-    port, 
-    slackToken, 
-    slackSigningSecret,
-    firebaseApiKey,
-    firebaseAuthDomain,
-    firebaseDatabaseUrl,
-    firebaseProjectId,
-    firebaseMessagingSenderId,
-    firebaseAppId
-} = require('./config');
-const { App } = require('@slack/bolt');
-var firebase = require('firebase/app');
-require('firebase/firestore');
+const express = require('express');
+const app = express();
 
-var firebaseConfig = {
-    apiKey: firebaseApiKey,
-    authDomain: firebaseAuthDomain,
-    databaseURL: firebaseDatabaseUrl,
-    projectId: firebaseProjectId,
-    storageBucket: "",
-    messagingSenderId: firebaseMessagingSenderId,
-    appId: firebaseAppId
-};
 
-firebase.initializeApp(firebaseConfig)
-
-// Initializes your app with your bot token and signing secret
-const app = new App({
-    token: slackToken,
-    signingSecret: slackSigningSecret
+const server = app.listen(7000, () => {
+    console.log('Express running -> PORT %s', server.address().port);
 });
 
-(async () => {
-  // Start your app
-  await app.start(process.env.PORT);
-
-  console.log('⚡️ Bolt app is running!');
-})();
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/slack-button.html') 
+});
