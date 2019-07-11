@@ -54,8 +54,11 @@ const app = new App({
 
 
 const express = require('express');
+const formidable = require('express-formidable')
 const expressApp = express();
+expressApp.use(formidable())
 const request = require('request')
+
 
 
 const server = expressApp.listen(7000, () => {
@@ -84,14 +87,15 @@ expressApp.get('/auth/redirect', (req, res) => {
     }else{
         console.log(JSONresponse)
 
-        let teamRef = firestore.collection('topics').doc('null').collection('teams').doc(JSONresponse.team_id)
+        let channelRef = firestore.collection('channels').doc(JSONresponse.incoming_webhook.channel_id)
 
-        let setTeam = teamRef.set({
-          access_token: JSONresponse.access_token,
-          scope: JSONresponse.scope,
+        let setChannel = channelRef.set({
+          team_name: JSONresponse.team_name,
+          team_id: JSONresponse.team_id,
           user_id: JSONresponse.user_id,
-          team_name: JSONresponse.team_name
-        })
+          channel: JSONresponse.incoming_webhook.channel,
+          url: JSONresponse.incoming_webhook.url
+        });
 
 
         
@@ -105,7 +109,7 @@ expressApp.get('/auth/redirect', (req, res) => {
 expressApp.get('/post/message', (req, res) => {
   console.log('signs of life')
   var webhook = {
-    uri: 'https://hooks.slack.com/services/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',
+    uri: 'https://hooks.slack.com/services/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',
     method: 'POST',
     json: {'text':'Hello, World!'}
   }
@@ -117,4 +121,29 @@ expressApp.get('/post/message', (req, res) => {
     res.send("Success!")
   });
 
+});
+
+expressApp.post('/topics', (req, res) => {
+  console.log(req.fields)
+
+  let command = req.fields.text
+  let topics = command.split(', ').sort()
+  var docName = ""
+  topics.forEach(function(topic) {
+    docName += topic
+  })
+
+  let topicRef = firestore.collection('topics').doc(docName)
+
+  let setTopic = topicRef.set({
+    topics: topics
+  })
+
+  let channelRef = firestore.collection('channels').doc(req.fields.channel_id)
+
+  let setChannel = channelRef.update(
+    {topics: topics}
+  )
+
+  res.send("It Worked").status(200).end()
 });
