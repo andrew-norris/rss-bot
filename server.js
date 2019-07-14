@@ -138,14 +138,20 @@ expressApp.post('/topics', (req, res) => {
 
   let topic = topicRef.set({})
 
+  let currentTopics
+
   var updates = {};
   topics.forEach(function(topic) {
-    updates[`topics.${topic}`] = true
+    updates[topic] = true
   })
-  topicRef.update(updates)
-  channelRef.update(updates)
+  topicRef.update({
+    'topics': updates
+  })
+  channelRef.update({
+    'topics': updates
+  })
 
-  res.send("It Worked").status(200).end()
+  res.send(`Channels topics are now: ${topics}`).status(200).end()
 });
 
 
@@ -164,8 +170,14 @@ expressApp.get('/feed/post', (req, res) => {
           console.log("are we here")
           console.log(topicDoc.data().topics)
           let topics = Object.keys(topicDoc.data().topics)
-          let lastCheckedDate = topicDoc.data().lastCheckedDate
-          console.log(lastCheckedDate)
+          
+          var lastCheckedDate = ""
+          if (topicDoc.data().lastCheckedDate == undefined) {
+            lastCheckedDate = "Fri, 05 Jul 2019 07:00:00 GMT"
+          } else {
+            lastCheckedDate = topicDoc.data().lastCheckedDate
+          }
+          console.log(`lastchecked date: ${lastCheckedDate}`)
           var url = rssUrl + "&q="
           for (let key of topics) {
             console.log(key)
@@ -190,21 +202,32 @@ expressApp.get('/feed/post', (req, res) => {
                         console.log(topics.length)
                         if (Object.keys(channelDoc.data().topics).length == topics.length) {
 
-                          console.log(Date.parse(feed.items[0].pubDate) > Date.parse(feed.items[1].pubDate))
-                          
-                          var options = {
-                            uri: channelDoc.data().url,
-                            method: 'POST',
-                            json: {'text': feed.items[0].title}
+                
+                          var feedIndex = 0
+                          console.log(feed.items[feedIndex].pubDate)
+                          while (Date.parse(feed.items[feedIndex].pubDate) > Date.parse(lastCheckedDate)) {
+                            console.log(feed.items[feedIndex].pubDate)
+                            var options = {
+                              uri: channelDoc.data().url,
+                              method: 'POST',
+                              json: {'text': feed.items[feedIndex].title}
+                            }
+                            request.post(options, (error, response, body) => {              
+                              // res.send('Success!')
+                            });
+
+                            feedIndex += 1
                           }
-                          request.post(options, (error, response, body) => {              
-                            // res.send('Success!')
-                          });
                         }
                       })
                     })
                     .catch(err => console.log(err))
                 })();
+
+                topicDoc.ref.update({
+                  'lastCheckedDate': feed.items[0].pubDate
+                })
+
               })
               .catch(err => console.log(err))
           })();
@@ -213,4 +236,4 @@ expressApp.get('/feed/post', (req, res) => {
       .catch(err => console.log(err))
   })();
   res.send("Success!")
-});
+})
