@@ -49,6 +49,7 @@ const app = new App({
   console.log(JSON.stringify(app, null, 4));
 
   console.log('⚡️ Bolt app is running!');
+  console.log(`current time: ${new Date()}`)
 })();
 
 
@@ -161,8 +162,7 @@ let parser = new Parser()
 
 const rssUrl = "https://news.google.com/rss/search?hl=en-CA&gl=CA&ceid=CA:en"
 
-
-expressApp.get('/feed/post', (req, res) => {
+function postFeeds(req, res) {
   (async () => {
     await firestore.collection('topics').get()
       .then(topicQuerySnapshot => {
@@ -188,6 +188,7 @@ expressApp.get('/feed/post', (req, res) => {
             let feed = await parser.parseURL(url)
               .then(feed => {
                 (async () => {
+                  feed.items = feed.items.sort(compareDates)
                   console.log("we got the feed")
                   console.log(topics)
                   var query = firestore.collection('channels')
@@ -202,15 +203,22 @@ expressApp.get('/feed/post', (req, res) => {
                         console.log(topics.length)
                         if (Object.keys(channelDoc.data().topics).length == topics.length) {
 
-                
                           var feedIndex = 0
-                          console.log(feed.items[feedIndex].pubDate)
+                          console.log(`outside while ${feed.items[feedIndex].title}, ${feed.items[feedIndex].pubDate}, last checked: ${lastCheckedDate}`)
+                          console.log(`outside while ${feed.items[feedIndex+1].title}, ${feed.items[feedIndex+1].pubDate}, last checked: ${lastCheckedDate}`)
                           while (Date.parse(feed.items[feedIndex].pubDate) > Date.parse(lastCheckedDate)) {
-                            console.log(feed.items[feedIndex].pubDate)
+                            console.log(`inside while ${feed.items[feedIndex].pubDate}`)
                             var options = {
                               uri: channelDoc.data().url,
                               method: 'POST',
-                              json: {'text': feed.items[feedIndex].title}
+                              json: {
+                                'text': feed.items[feedIndex].title,
+                                'attachments': [
+                                  {
+                                    'text': feed.items[feedIndex].link
+                                  }
+                                ]
+                              }
                             }
                             request.post(options, (error, response, body) => {              
                               // res.send('Success!')
@@ -220,20 +228,53 @@ expressApp.get('/feed/post', (req, res) => {
                           }
                         }
                       })
+                      console.log(`update feed date ${feed.items[0].pubDate}`)
+                      var newCheckedDate = feed.items[0].pubDate
+                      if (Date.parse(newCheckedDate) > Date.parse(lastCheckedDate)) {
+                        topicDoc.ref.update({
+                          'lastCheckedDate': feed.items[0].pubDate
+                        })
+                      }
                     })
                     .catch(err => console.log(err))
                 })();
-
-                topicDoc.ref.update({
-                  'lastCheckedDate': feed.items[0].pubDate
-                })
-
               })
               .catch(err => console.log(err))
           })();
         });
       })
-      .catch(err => console.log(err))
+    .catch(err => console.log(err))
   })();
-  res.send("Success!")
+  if (res != null) {
+    res.send("Success!")
+  }
+}
+
+
+expressApp.get('/feed/post', (req, res) => {
+  postFeeds(req, res)
 })
+
+
+let isWorking = false;
+
+setInterval(() => {
+  if (isWorking) {
+    return;
+  }
+  
+  isWorking = true;
+  console.log(`polling at ${new Date()}`);
+  postFeeds(null, null)
+  isWorking = false;
+}, 300000);
+
+
+
+function compareDates(a,b) {
+  if (Date.parse(a.pubDate) <= Date.parse(b.pubDate)) {
+    return 1
+  } else {
+    return -1
+  }
+}
