@@ -13,6 +13,7 @@
     "dotenv": "^8.0.0",
     "express-formidable": "^1.2.0",
     "firebase": "^6.2.4",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "rss-parser": "^3.7.2"
   }
 }
