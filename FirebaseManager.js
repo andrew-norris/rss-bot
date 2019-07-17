@@ -1,11 +1,17 @@
-const { 
-    firebaseApiKey,
-    firebaseAuthDomain,
-    firebaseDatabaseUrl,
-    firebaseProjectId,
-    firebaseMessagingSenderId,
-    firebaseAppId
-} = require('./config');
+
+const config = require('./config');
+
+const firebaseAuthDomain = config.firebaseAuthDomain
+const firebaseDatabaseUrl = config.firebaseDatabaseUrl
+const firebaseProjectId = config.firebaseProjectId
+const firebaseMessagingSenderId = config.firebaseMessagingSenderId
+const firebaseAppId = config.firebaseAppId
+const firebaseApiKey = config.firebaseApiKey
+
+
+
+var firebase = require('firebase/app');
+require('firebase/firestore');
 
 var firebaseConfig = {
     apiKey: firebaseApiKey,
@@ -17,8 +23,6 @@ var firebaseConfig = {
     appId: firebaseAppId
 };
 
-var firebase = require('firebase/app');
-require('firebase/firestore');
 firebase.initializeApp(firebaseConfig)
 
 var firestore = firebase.firestore()

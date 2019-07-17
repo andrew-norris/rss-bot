@@ -31,7 +31,7 @@ firebase.initializeApp(firebaseConfig)
 
 var firestore = firebase.firestore()
 
-const authorizeSlack = async ({_, enterpriseId}) => {
+const authorizeSlack = async ({teamId, enterpriseId}) => {
   return {
     botToken: slackToken
   }
