@@ -10,7 +10,8 @@ const {
     firebaseDatabaseUrl,
     firebaseProjectId,
     firebaseMessagingSenderId,
-    firebaseAppId
+    firebaseAppId,
+    googleRssUrl
 } = require('./config');
 const { App } = require('@slack/bolt');
 var firebase = require('firebase/app');

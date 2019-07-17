@@ -13,4 +13,5 @@ module.exports = {
     firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
     firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
     firebaseAppId: process.env.FIREBASE_APP_ID,
+    googleRssUrl: process.env.GOOGLE_RSS_URL
 }
