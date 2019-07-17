@@ -25,32 +25,39 @@ firebase.initializeApp(firebaseConfig)
 var firestore = firebase.firestore()
 
 exports.setChannel = function(jsonResponse) {
-    console.log('setChannel')
     let channelRef = firestore.collection('channels').doc(jsonResponse.incoming_webhook.channel_id)
     channelRef.set({
         team_name: jsonResponse.team_name,
         team_id: jsonResponse.team_id,
         user_id: jsonResponse.user_id,
         channel: jsonResponse.incoming_webhook.channel,
-        url: jsonResponse.incoming_webhook.url
+        webhook_url: jsonResponse.incoming_webhook.url
       });
 }
 
-exports.createTopicDocument = function(documentName, topicsMap) {
+exports.createTopicDocument = function(topicUrl, documentName, topics, channelMap) {
     console.log(`createTopicDocument documentName:${documentName}`)
     let topicReference = firestore.collection('topics').doc(documentName)
     topicReference.set({
-        'topics': topicsMap
+        'rss_url': topicUrl,
+        'topics': topics
+    })
+    let subscribedChannelReference = firestore.collection('topics')
+        .doc(documentName)
+        .collection('subscribed-channels')
+        .doc(channelMap['channel_id'])
+    subscribedChannelReference.set({
+        channel_name: channelMap['channel_name'],
+        webhook_url: channelMap['webhook_url']
     })
 }
 
-exports.setChannelTopics = function(channelId, topicsMap) {
-    console.log('setChannelTopics')
+exports.setChannelTopic = function(channelId, documentName) {
+    console.log('setChannelTopics') 
     let channelReference = firestore.collection('channels').doc(channelId)
     channelReference.update({
-            'topics': topicsMap
+            'topic': documentName
     })
-
 }
 
 exports.getTopics = async function() {

@@ -30,29 +30,39 @@ app.get(slackButtonPath, (req, res) => {
 
 app.get(authRedirectPath, (req, res) => {
     let queryCode = req.query.code
-    let jsonResponse = requestManager.getJsonBody(
+    console.log(queryCode)
+    requestManager.getJsonBody(
         slackManager.getOptions(queryCode)
-    )
-    if(jsonResponse.ok) {
-        firebaseManager.setChannel(jsonResponse)
-        res.send('Success!')
-    } else {
-        res.send(
-            "Error encountered: \n"+JSON.stringify(jsonResponse)
-        ).status(200).end()
-    }
+    ).then(jsonResponse => {
+        console.log(jsonResponse)
+        if(jsonResponse.ok) {
+            firebaseManager.setChannel(jsonResponse)
+            res.send('Success!')
+        } else {
+            res.send(
+                "Error encountered: \n"+JSON.stringify(jsonResponse)
+            ).status(200).end()
+        }
+    })
 })
 
 app.post(postTopicsPath, (req, res) => {
+    console.log(req.fields)
     let channelId = req.fields.channel_id
     let command = req.fields.text
-    let topicsMap = feedManager.getTopicsMap(command)
-    let documentName = feedManager.getDocumentName(topicsMap)
-    
-    firebaseManager.createTopicDocument(documentName, topicsMap)
-    firebaseManager.setChannelTopics(channelId, topicsMap)
-    
-    let topics = [ ...Object.keys(topicsMap) ]
+    let topics = feedManager.getTopicsMap(command)
+    let documentName = feedManager.getDocumentName(topics)
+
+    let fakeUrl = "https://news.google.com/rss/search?hl=en-CA&gl=CA&ceid=CA:en&q=china"
+
+    let channelMap = {
+        'channel_id': channelId,
+        'channel_name': req.fields.channel_name,
+        'webhook_url': req.fields.response_url
+    }
+
+    firebaseManager.createTopicDocument(fakeUrl, documentName, topics, channelMap)
+    firebaseManager.setChannelTopic(channelId, documentName)
 
     res.send(
         `Channels topics are now: ${topics}`

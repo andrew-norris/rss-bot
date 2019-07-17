@@ -48,22 +48,15 @@ exports.getFeedUrl = function(topics) {
 
 exports.getTopicsMap = function(commandString) {
     let topics = commandString.split(', ').sort()
-    var topicsMap = {}
-    topics.forEach(function(topic) {
-        topicsMap[topic] = true
-    })
 
-    return topicsMap
+    return topics
 }
 
-exports.getDocumentName = function(topicsMap) {
+exports.getDocumentName = function(topics) {
     var docName = ""
-    console.log(Object.keys(topicsMap))
-    for (let key of Object.keys(topicsMap)) {
-        console.log(`key: ${key}`)
-        key = key.split().join()
-        docName += key
-    }
-    console.log(`docName: ${docName}`)
+    topics.forEach(function(topic) {
+        docName += topic.split().join()
+    }) 
+       
     return docName
 }
