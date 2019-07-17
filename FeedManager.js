@@ -56,12 +56,14 @@ exports.getTopicsMap = function(commandString) {
     return topicsMap
 }
 
-exports.getDocumentName = function getDocumentName(topicsMap) {
+exports.getDocumentName = function(topicsMap) {
     var docName = ""
-    for (let topic of topicsMap) {
-        topic = topic.split().join()
-        docName += topic
+    console.log(Object.keys(topicsMap))
+    for (let key of Object.keys(topicsMap)) {
+        console.log(`key: ${key}`)
+        key = key.split().join()
+        docName += key
     }
-
+    console.log(`docName: ${docName}`)
     return docName
 }

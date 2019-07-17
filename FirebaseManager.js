@@ -1,6 +1,3 @@
-
-const config = require('./config');
-
 const {
     firebaseAuthDomain,
     firebaseDatabaseUrl,
@@ -28,6 +25,7 @@ firebase.initializeApp(firebaseConfig)
 var firestore = firebase.firestore()
 
 exports.setChannel = function(jsonResponse) {
+    console.log('setChannel')
     let channelRef = firestore.collection('channels').doc(jsonResponse.incoming_webhook.channel_id)
     channelRef.set({
         team_name: jsonResponse.team_name,
@@ -39,6 +37,7 @@ exports.setChannel = function(jsonResponse) {
 }
 
 exports.createTopicDocument = function(documentName, topicsMap) {
+    console.log(`createTopicDocument documentName:${documentName}`)
     let topicReference = firestore.collection('topics').doc(documentName)
     topicReference.set({
         'topics': topicsMap
@@ -46,6 +45,7 @@ exports.createTopicDocument = function(documentName, topicsMap) {
 }
 
 exports.setChannelTopics = function(channelId, topicsMap) {
+    console.log('setChannelTopics')
     let channelReference = firestore.collection('channels').doc(channelId)
     channelReference.update({
             'topics': topicsMap
@@ -54,6 +54,7 @@ exports.setChannelTopics = function(channelId, topicsMap) {
 }
 
 exports.getTopics = async function() {
+    console.log('getTopics')
     return new Promise( resolve => {
         firestore.collection('topics')
         .get()

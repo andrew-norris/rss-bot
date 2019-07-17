@@ -18,6 +18,7 @@ const express = require('express')
 const formidable = require('express-formidable')
 
 const app = express()
+app.use(formidable())
 
 const server = app.listen(port, () => {
     console.log(`express running - PORT: ${server.address().port}`)
@@ -43,15 +44,15 @@ app.get(authRedirectPath, (req, res) => {
 })
 
 app.post(postTopicsPath, (req, res) => {
-    let channelId = req.fields.channelId
+    let channelId = req.fields.channel_id
     let command = req.fields.text
     let topicsMap = feedManager.getTopicsMap(command)
     let documentName = feedManager.getDocumentName(topicsMap)
     
     firebaseManager.createTopicDocument(documentName, topicsMap)
     firebaseManager.setChannelTopics(channelId, topicsMap)
-
-    let topics = [ ...topicsMap.keys() ]
+    
+    let topics = [ ...Object.keys(topicsMap) ]
 
     res.send(
         `Channels topics are now: ${topics}`
