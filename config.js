@@ -22,5 +22,4 @@ require('dotenv').config({path: __dirname + '/variables.env'})
 
 
 //Google RSS Exports
-
     module.exports.googleRssUrl = process.env.GOOGLE_RSS_URL

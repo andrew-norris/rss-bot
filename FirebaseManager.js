@@ -1,14 +1,14 @@
 
 const config = require('./config');
 
-const firebaseAuthDomain = config.firebaseAuthDomain
-const firebaseDatabaseUrl = config.firebaseDatabaseUrl
-const firebaseProjectId = config.firebaseProjectId
-const firebaseMessagingSenderId = config.firebaseMessagingSenderId
-const firebaseAppId = config.firebaseAppId
-const firebaseApiKey = config.firebaseApiKey
-
-
+const {
+    firebaseAuthDomain,
+    firebaseDatabaseUrl,
+    firebaseProjectId,
+    firebaseMessagingSenderId,
+    firebaseAppId,
+    firebaseApiKey
+} = require('./config')
 
 var firebase = require('firebase/app');
 require('firebase/firestore');
