@@ -1,16 +1,4 @@
 const { 
-    port, 
-    slackToken, 
-    slackSigningSecret,
-    slackClientId,
-    slackClientSecret,
-    slackRedirectUri,
-    firebaseApiKey,
-    firebaseAuthDomain,
-    firebaseDatabaseUrl,
-    firebaseProjectId,
-    firebaseMessagingSenderId,
-    firebaseAppId,
     googleRssUrl
 } = require('./config');
 
@@ -18,7 +6,7 @@ let Parser = require('rss-parser')
 let parser = new Parser()
 
 
-async function getFeed(feedUrl) {
+exports.getFeed = async function(feedUrl) {
     let feed = await parser.parseURL(feedUrl)
     
     return feed.sort(comparePubDates)
@@ -34,7 +22,7 @@ function comparePubDates(a, b) {
 
 const topicQueryParameter = '&q='
 
-function getFeedUrl(topics) {
+exports.getFeedUrl = function getFeedUrl(topics) {
     var url = googleRssUrl
 
     if (topics.length > 0) {
@@ -47,9 +35,11 @@ function getFeedUrl(topics) {
             url += ','
         }
     })
+
+    return url
 }
 
-function getTopicsMap(commandString) {
+exports.getTopicsMap = function getTopicsMap(commandString) {
     let topics = commandString.split(', ').sort()
     var topicsMap = {}
     topics.forEach(function(topic) {
@@ -59,7 +49,7 @@ function getTopicsMap(commandString) {
     return topicsMap
 }
 
-function getDocumentName(topicsMap) {
+exports.getDocumentName = function getDocumentName(topicsMap) {
     var docName = ""
     for (let topic of topicsMap) {
         topic = topic.split().join()

@@ -1,17 +1,10 @@
 const { 
-    port, 
-    slackToken, 
-    slackSigningSecret,
-    slackClientId,
-    slackClientSecret,
-    slackRedirectUri,
     firebaseApiKey,
     firebaseAuthDomain,
     firebaseDatabaseUrl,
     firebaseProjectId,
     firebaseMessagingSenderId,
-    firebaseAppId,
-    googleRssUrl
+    firebaseAppId
 } = require('./config');
 
 var firebaseConfig = {
@@ -30,9 +23,9 @@ firebase.initializeApp(firebaseConfig)
 
 var firestore = firebase.firestore()
 
-function setChannel(JSONresponse) {
+exports.setChannel = function(JSONresponse) {
     let channelRef = firestore.collection('channels').doc(JSONresponse.incoming_webhook.channel_id)
-    let setChannel = channelRef.set({
+    channelRef.set({
         team_name: JSONresponse.team_name,
         team_id: JSONresponse.team_id,
         user_id: JSONresponse.user_id,
@@ -41,14 +34,14 @@ function setChannel(JSONresponse) {
       });
 }
 
-function createTopicDocument(documentName, topicsMap) {
+exports.createTopicDocument = function(documentName, topicsMap) {
     let topicReference = firestore.collection('topics').doc(documentName)
-    let topic = topicReference.set({
+    topicReference.set({
         'topics': topicsMap
     })
 }
 
-function setChannelTopics(channelId, topicsMap) {
+exports.setChannelTopics = function(channelId, topicsMap) {
     let channelReference = firestore.collection('channels').doc(channelId)
     channelReference.update({
             'topics': topicsMap
@@ -56,12 +49,10 @@ function setChannelTopics(channelId, topicsMap) {
 
 }
 
-async function getTopics() {
+exports.getTopics = async function() {
     firestore.collection('topics')
         .get()
         .then(topicQuerySnapShot => {
-            topicQuerySnapShot.docs.forEach(topicDoc => {
-
-            })
+            return topicQuerySnapShot.docs
         })
 }

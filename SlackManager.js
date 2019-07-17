@@ -1,4 +1,4 @@
 
-module.exports.getOptions = function() {
+exports.getOptions = function() {
     return "String"
 }
