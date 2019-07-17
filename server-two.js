@@ -67,17 +67,17 @@ async function postFeeds(req, res) {
         .then(feedUrls => {
             console.log(feedUrls)
 
-            res.send(JSON.stringify(feedUrls))
-                // let feedUrl = topic.data().rssFeedUrl
-        
-                // feedManager.getFeed(feedUrl)
-                //     .then(feed => {
-                //         res.send(JSON.stringify(feed))
-                //     })
-                //     .catch(error => {
-                //         console.log(error)
-                //     })
-            // })
+            feedUrls.forEach(feedUrl => {
+                let fakeUrl = "https://news.google.com/rss/search?hl=en-CA&gl=CA&ceid=CA:en&q=china"
+                feedManager.getFeed(fakeUrl)
+                .then(feed => {
+                    console.log(feed[0])
+                    res.send(JSON.stringify(feed))
+                })
+                .catch(error => {
+                    console.log(error)
+                })
+            })
         })
         .catch(error => {
             console.log(error)

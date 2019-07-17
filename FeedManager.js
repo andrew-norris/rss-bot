@@ -10,7 +10,7 @@ exports.getFeed = async function(feedUrl) {
     return new Promise(resolve => {
         parser.parseURL(feedUrl)
             .then(feed => {
-                resolve(feed.sort(comparePubDates))
+                resolve(feed.items.sort(comparePubDates))
            })
            .catch(error => {
                console.log(error)
