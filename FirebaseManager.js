@@ -28,8 +28,6 @@ var firebase = require('firebase/app');
 require('firebase/firestore');
 firebase.initializeApp(firebaseConfig)
 
-let parseManager = require('./ParseManager')
-
 var firestore = firebase.firestore()
 
 function setChannel(JSONresponse) {
@@ -58,26 +56,6 @@ function setChannelTopics(channelId, topicsMap) {
 
 }
 
-function getTopicsMap(commandString) {
-    let topics = commandString.split(', ').sort()
-    var topicsMap = {}
-    topics.forEach(function(topic) {
-        topicsMap[topic] = true
-    })
-
-    return topicsMap
-}
-
-function getDocumentName(topicsMap) {
-    var docName = ""
-    for (let topic of topicsMap) {
-        topic = topic.split().join()
-        docName += topic
-    }
-
-    return docName
-}
-
 async function getTopics() {
     firestore.collection('topics')
         .get()
@@ -87,22 +65,3 @@ async function getTopics() {
             })
         })
 }
-
-const topicQueryParameter = '&q='
-
-function getFeedUrl(topics) {
-    var url = googleRssUrl
-
-    if (topics.length > 0) {
-        url += topicQueryParameter
-    }
-
-    topics.forEach(function(topic, index) {
-        url += topic
-        if (index != topics.length - 1) {
-            url += ','
-        }
-    })
-}
-
-
