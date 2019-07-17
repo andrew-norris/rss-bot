@@ -5,3 +5,9 @@ exports.getJsonBody = function(options) {
         return JSON.parse(body)
     })
 } 
+
+exports.post = function(options) {
+    request.post(options, (error, response, body) => {
+
+    })
+}

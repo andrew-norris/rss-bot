@@ -58,12 +58,13 @@ exports.getTopics = async function() {
         firestore.collection('topics')
         .get()
         .then(topicQuerySnapShot => {
-            console.log(typeof topicQuerySnapShot.docs)
-            console.log("fm: " + topicQuerySnapShot)
-            let dates = topicQuerySnapShot.docs.map(topic => {
-                return topic.data().lastCheckedDate
+            let topics = topicQuerySnapShot.docs.map(topic => {
+                return {
+                    'feedUrl': topic.data().lastCheckedDate,
+                    'channels': [1,2,3,4]
+                }
             })
-            resolve(dates)
+            resolve(topics)
         })
         .catch(error => {
             console.log(error)

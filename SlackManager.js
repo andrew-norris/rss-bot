@@ -16,3 +16,16 @@ exports.getOptions = function(queryCode) {
       }
 }
 
+exports.getMessegeOptions = function(webhookUrl, title, link) {
+    return {
+        uri: webhookUrl,
+        method: 'POST',
+        json: {
+            'text': title,
+            'attachments': [{
+                'text': link
+            }]
+        }
+    }
+}
+

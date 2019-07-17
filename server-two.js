@@ -64,14 +64,16 @@ app.get('/test', (req, res) => {
 
 async function postFeeds(req, res) {
     firebaseManager.getTopics()
-        .then(feedUrls => {
-            console.log(feedUrls)
-
-            feedUrls.forEach(feedUrl => {
+        .then(topics => {
+            console.log(topics.length)
+            topics.forEach(topic => {
+                console.log(`topic url: ${topic['feedUrl']}`)
                 let fakeUrl = "https://news.google.com/rss/search?hl=en-CA&gl=CA&ceid=CA:en&q=china"
                 feedManager.getFeed(fakeUrl)
                 .then(feed => {
-                    console.log(feed[0])
+                    topic['channels'].forEach(channel => {
+                        console.log(channel)
+                    })
                     res.send(JSON.stringify(feed))
                 })
                 .catch(error => {
@@ -82,6 +84,4 @@ async function postFeeds(req, res) {
         .catch(error => {
             console.log(error)
         })
-
-    
 }
