@@ -7,9 +7,16 @@ let parser = new Parser()
 
 
 exports.getFeed = async function(feedUrl) {
-    let feed = await parser.parseURL(feedUrl)
+    return new Promise(resolve => {
+        parser.parseURL(feedUrl)
+            .then(feed => {
+                resolve(feed.sort(comparePubDates))
+           })
+           .catch(error => {
+               console.log(error)
+           })
+    })
     
-    return feed.sort(comparePubDates)
 }
 
 function comparePubDates(a, b) {
@@ -22,7 +29,7 @@ function comparePubDates(a, b) {
 
 const topicQueryParameter = '&q='
 
-exports.getFeedUrl = function getFeedUrl(topics) {
+exports.getFeedUrl = function(topics) {
     var url = googleRssUrl
 
     if (topics.length > 0) {
@@ -39,7 +46,7 @@ exports.getFeedUrl = function getFeedUrl(topics) {
     return url
 }
 
-exports.getTopicsMap = function getTopicsMap(commandString) {
+exports.getTopicsMap = function(commandString) {
     let topics = commandString.split(', ').sort()
     var topicsMap = {}
     topics.forEach(function(topic) {

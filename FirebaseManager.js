@@ -27,14 +27,14 @@ firebase.initializeApp(firebaseConfig)
 
 var firestore = firebase.firestore()
 
-exports.setChannel = function(JSONresponse) {
-    let channelRef = firestore.collection('channels').doc(JSONresponse.incoming_webhook.channel_id)
+exports.setChannel = function(jsonResponse) {
+    let channelRef = firestore.collection('channels').doc(jsonResponse.incoming_webhook.channel_id)
     channelRef.set({
-        team_name: JSONresponse.team_name,
-        team_id: JSONresponse.team_id,
-        user_id: JSONresponse.user_id,
-        channel: JSONresponse.incoming_webhook.channel,
-        url: JSONresponse.incoming_webhook.url
+        team_name: jsonResponse.team_name,
+        team_id: jsonResponse.team_id,
+        user_id: jsonResponse.user_id,
+        channel: jsonResponse.incoming_webhook.channel,
+        url: jsonResponse.incoming_webhook.url
       });
 }
 
@@ -54,9 +54,19 @@ exports.setChannelTopics = function(channelId, topicsMap) {
 }
 
 exports.getTopics = async function() {
-    firestore.collection('topics')
+    return new Promise( resolve => {
+        firestore.collection('topics')
         .get()
         .then(topicQuerySnapShot => {
-            return topicQuerySnapShot.docs
+            console.log(typeof topicQuerySnapShot.docs)
+            console.log("fm: " + topicQuerySnapShot)
+            let dates = topicQuerySnapShot.docs.map(topic => {
+                return topic.data().lastCheckedDate
+            })
+            resolve(dates)
         })
+        .catch(error => {
+            console.log(error)
+        })
+    })
 }
