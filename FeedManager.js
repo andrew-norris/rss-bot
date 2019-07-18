@@ -6,7 +6,7 @@ let Parser = require('rss-parser')
 let parser = new Parser()
 
 
-exports.getFeed = async function(feedUrl) {
+exports.getFeedItems = async function(feedUrl) {
     return new Promise(resolve => {
         parser.parseURL(feedUrl)
             .then(feed => {
@@ -59,4 +59,25 @@ exports.getDocumentName = function(topics) {
     }) 
        
     return docName
+}
+
+exports.getAttachments = function(items) {
+    var attachments = []
+    items = items.slice(0,10)
+    items.forEach(function(item) {
+        attachments.push(createAttachment(item))
+    })
+    return attachments
+}
+
+function createAttachment(item) {
+    console.log(item.title)
+    let [title, author] = item.title.split(' - ')
+    console.log(title)
+    console.log(author)
+    return {
+        "author_name": author,
+        "title": title,
+        "text": item.link
+    }
 }

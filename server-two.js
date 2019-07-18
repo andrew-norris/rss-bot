@@ -78,21 +78,45 @@ async function postFeeds(req, res) {
         .then(topics => {
             console.log(topics.length)
             topics.forEach(topic => {
-                console.log(`topic url: ${topic['feedUrl']}`)
-                let fakeUrl = "https://news.google.com/rss/search?hl=en-CA&gl=CA&ceid=CA:en&q=china"
-                feedManager.getFeed(fakeUrl)
-                .then(feed => {
-                    topic['channels'].forEach(channel => {
-                        console.log(channel)
+                feedManager.getFeedItems(topic['feedUrl'])
+                    .then(items => { 
+                        let attachments = feedManager.getAttachments(items)
+                        firebaseManager.getSubscribedChannels('onetwo')
+                        .then( webhooks => {
+                            webhooks.forEach(webhook => {
+                                console.log(webhook)
+                                let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
+                                request.post(options, (error, response, body) => {
+                                    console.log(error)
+                                })
+                            })
+                        })
+                        
+                    
+                        res.send(JSON.stringify(items))
                     })
-                    res.send(JSON.stringify(feed))
-                })
-                .catch(error => {
-                    console.log(error)
-                })
+                    .catch(error => {
+                        console.log(error)
+                    })
             })
         })
         .catch(error => {
             console.log(error)
         })
 }
+
+const request = require('request')
+
+async function testPost(req, res) {
+    let options = slackManager.getMessegeOptions(
+        "https://hooks.slack.com/services/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",
+        "test post",
+        "test link"
+    )
+    request.post(options, (error, response, body) => {              
+        res.send(response)
+    });
+    
+
+}
+

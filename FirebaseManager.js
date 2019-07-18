@@ -9,6 +9,7 @@ const {
 
 var firebase = require('firebase/app');
 require('firebase/firestore');
+let admin = require('firebase-admin')
 
 var firebaseConfig = {
     apiKey: firebaseApiKey,
@@ -35,13 +36,8 @@ exports.setChannel = function(jsonResponse) {
       });
 }
 
-exports.createTopicDocument = function(topicUrl, documentName, topics, channelMap) {
+exports.createTopicDocument = async function(topicUrl, documentName, topics, channelMap) {
     console.log(`createTopicDocument documentName:${documentName}`)
-    let topicReference = firestore.collection('topics').doc(documentName)
-    topicReference.set({
-        'rss_url': topicUrl,
-        'topics': topics
-    })
     let subscribedChannelReference = firestore.collection('topics')
         .doc(documentName)
         .collection('subscribed-channels')
@@ -68,8 +64,7 @@ exports.getTopics = async function() {
         .then(topicQuerySnapShot => {
             let topics = topicQuerySnapShot.docs.map(topic => {
                 return {
-                    'feedUrl': topic.data().lastCheckedDate,
-                    'channels': [1,2,3,4]
+                    'feedUrl': topic.data().rss_url
                 }
             })
             resolve(topics)
@@ -77,5 +72,23 @@ exports.getTopics = async function() {
         .catch(error => {
             console.log(error)
         })
+    })
+}
+
+exports.getSubscribedChannels = async function(topicDocumentName) {
+    console.log('getSubscribedChannels')
+    return new Promise(resolve => {
+        firestore.collection('topics')
+            .doc(topicDocumentName)
+            .collection('subscribed-channels')
+            .get()
+            .then(subscribedChannelsQuerySnapShot => {
+                let webhooks = subscribedChannelsQuerySnapShot.docs.map(channel => {
+
+                    return channel.data().webhook_url
+                })
+                console.log(webhooks)
+                resolve(webhooks)
+            })
     })
 }
