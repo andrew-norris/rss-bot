@@ -71,13 +71,11 @@ exports.getAttachments = function(items) {
 }
 
 function createAttachment(item) {
-    // console.log(item.title)
     let titleMap = splitTitle(item.title)
-    // console.log(titleMap)
     
     return {
-        "author_name": 'author',
-        "title": 'post_title',
+        "author_name": titleMap['author'],
+        "title": titleMap['post_title'],
         "text": item.link
     }
 }
@@ -86,10 +84,6 @@ function splitTitle(title) {
     let parts = title.split(' - ')
     let author = parts.slice(-1).pop()
     let postTitle = parts.slice(0,-1).join()
-
-    console.log(postTitle)
-    console.log(author)
-    // console.log(postTitle)
     
     return {
         author: author,

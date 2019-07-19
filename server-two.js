@@ -61,7 +61,7 @@ app.post(postTopicsPath, (req, res) => {
         'webhook_url': req.fields.response_url
     }
 
-    firebaseManager.createTopicDocument(fakeUrl, documentName, topics, channelMap)
+    firebaseManager.subscribeToTopic(documentName, channelMap)
     firebaseManager.setChannelTopic(channelId, documentName)
 
     res.send(

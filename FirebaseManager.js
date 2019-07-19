@@ -38,14 +38,29 @@ exports.setChannel = function(jsonResponse) {
 
 exports.subscribeToTopic = async function(documentName, channelMap) {
     console.log(`createTopicDocument documentName:${documentName}`)
+
     let subscribedChannelReference = firestore.collection('topics')
-        .doc(documentName)
-        .collection('subscribed-channels')
+    .doc(documentName)
+    .collection('subscribed-channels')
+    .doc(channelMap['channel_id'])
+
+    firestore.collection('channels')
         .doc(channelMap['channel_id'])
-    subscribedChannelReference.set({
-        channel_name: channelMap['channel_name'],
-        webhook_url: channelMap['webhook_url']
-    })
+        .get()
+        .then(channelSnapShot => {
+            console.log(channelSnapShot.data().webhook_url)
+            return channelSnapShot.data().webhook_url
+        })
+        .then(webhook_url => {
+            console.log(webhook_url)
+            subscribedChannelReference.set({
+                channel_name: channelMap['channel_name'],
+                webhook_url: webhook_url
+            })
+        })
+
+
+    
 }
 
 exports.setChannelTopic = function(channelId, documentName) {
