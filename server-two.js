@@ -78,7 +78,6 @@ async function postFeeds(req, res) {
     firebaseManager.getTopics()
         .then(topics => {
             topics.forEach(topic => {
-
                 let attachmentsPromise = feedManager.getFeedItems(topic['feedUrl'])
                     .then(items => {
                         let filteredItems = postManager.getNewPosts(items)
@@ -89,7 +88,7 @@ async function postFeeds(req, res) {
                 Promise.all([attachmentsPromise, webhookPromise])
                     .then (results => {
                         console.log(`results ${results}`)
-                        let attachments = results[0]
+                        let attachments = feedManager.getAttachments(results[0])
                         let webhooks = results[1]
 
                         if (attachments.length > 0) {
