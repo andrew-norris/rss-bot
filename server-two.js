@@ -12,6 +12,7 @@ const firebaseManager = require('./FirebaseManager')
 const feedManager = require('./FeedManager')
 const slackManager = require('./SlackManager')
 const requestManager = require('./RequestManager')
+const postManager = require('./PostManager')
 
 //Imports
 const express = require('express')
@@ -80,7 +81,10 @@ async function postFeeds(req, res) {
             topics.forEach(topic => {
                 feedManager.getFeedItems(topic['feedUrl'])
                     .then(items => { 
-                        let attachments = feedManager.getAttachments(items)
+                        let filteredItems = postManager.getNewPosts(items)
+                        console.log(`filteredItems: ${filteredItems}`)
+                        let attachments = feedManager.getAttachments(filteredItems)
+                        // let attachments = feedManager.getAttachments(items)
                         firebaseManager.getSubscribedChannels('onetwo')
                         .then( webhooks => {
                             webhooks.forEach(webhook => {
@@ -92,7 +96,6 @@ async function postFeeds(req, res) {
                             })
                         })
                         
-                    
                         res.send(JSON.stringify(items))
                     })
                     .catch(error => {
