@@ -125,9 +125,11 @@ exports.filterOldPosts = async function(items, topicName) {
 
                 if (oldPosts.length > 0) {
                     newPosts = items.filter(item => {
-                        oldPosts.includes(item.title)
+                        return !oldPosts.includes(item.title)
                     })    
                 }
+
+                console.log(`newPosts: ${newPosts}`)
 
                 let titles = items.map(post => {
                     return post['title']

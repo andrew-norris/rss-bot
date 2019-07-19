@@ -71,7 +71,7 @@ app.post(postTopicsPath, (req, res) => {
 })
 
 app.get('/test', (req, res) => {
-    postFeedsTwo(req, res)
+    postFeeds(req, res)
 })
 
 async function postFeeds(req, res) {
@@ -88,16 +88,14 @@ async function postFeeds(req, res) {
 
                 Promise.all([attachmentsPromise, webhookPromise])
                     .then (results => {
-
+                        console.log(`results ${results}`)
                         let attachments = results[0]
                         let webhooks = results[1]
 
                         if (attachments.length > 0) {
                             webhooks.forEach(webhook => {
-                                console.log(webhook)
                                 let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
-                                request.post(options, (error, response, body) => {
-                                    console.log(error)
+                                requestManager.post(options, (error, response, body) => {
                                 })
                             })
                             res.send(attachments)
@@ -112,69 +110,8 @@ async function postFeeds(req, res) {
         })
 }
 
-async function postFeedsTwo(req, res) {
 
-}
-
-
-
-//                 feedManager.getFeedItems(topic['feedUrl'])
-//                     .then(items => { 
-//                         let filteredItems = postManager.getNewPosts(items)
-//                         console.log(`topic id: ${JSON.stringify(topic)}`)
-//                         firebaseManager.filterOldPosts(filteredItems, topic['topic'])
-//                             .then( newPosts => {
-//                                 let attachments = feedManager.getAttachments(newPosts)
-//                                 return attachments
-//                             })
-//                             .then(attachments => {
-//                                 if (attachments.length != 0) {
-//                                     // let attachments = feedManager.getAttachments(items)
-//                                     firebaseManager.getSubscribedChannels('onetwo')
-//                                     .then( webhooks => {
-//                                         webhooks.forEach(webhook => {
-//                                             console.log(webhook)
-//                                             let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
-//                                             request.post(options, (error, response, body) => {
-//                                                 console.log(error)
-//                                             })
-//                                         })
-//                                     })
-//                                     .catch(error => {
-//                                         console.log(error)
-//                                     })
-                                
-//                                     res.send(JSON.stringify(items))
-//                                 } else {
-//                                     res.send("No new items")
-//                                 }
-//                             })
-//                             .catch(error => {
-//                                 console.log(error)
-//                             })
-//                     })
-//                     .catch(error => {
-//                         console.log(error)
-//                     })
-//             })
-//         })
-//         .catch(error => {
-//             console.log(error)
-//         })
-// }
 
 
 
 const request = require('request')
-
-async function testPost(req, res) {
-    let options = slackManager.getMessegeOptions(
-        "https://hooks.slack.com/services/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",
-        "test post",
-        "test link"
-    )
-    request.post(options, (error, response, body) => {              
-        res.send(response)
-    });
-}
-

@@ -12,7 +12,7 @@ exports.getNewPosts = function(items) {
 function removeOutdatedItems(items) {
     
     let date = new Date()
-    date.setHours(date.getHours() - 6)
+    date.setHours(date.getHours() - 7)
 
     return items.filter(item => Date.parse(item.pubDate) > Date.parse(date))
 }
