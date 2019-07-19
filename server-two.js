@@ -86,8 +86,9 @@ async function postFeeds(req, res) {
                         firebaseManager.filterOldPosts(filteredItems, topic['topic'])
                             .then( newPosts => {
                                 let attachments = feedManager.getAttachments(newPosts)
-                                // let attachments = feedManager.getAttachments(items)
-                                firebaseManager.getSubscribedChannels('onetwo')
+                                if (attachments.length != 0) {
+                                    // let attachments = feedManager.getAttachments(items)
+                                    firebaseManager.getSubscribedChannels('onetwo')
                                     .then( webhooks => {
                                         webhooks.forEach(webhook => {
                                             console.log(webhook)
@@ -101,12 +102,12 @@ async function postFeeds(req, res) {
                                         console.log(error)
                                     })
                                 
-                                res.send(JSON.stringify(items))
+                                    res.send(JSON.stringify(items))
+                                }
                             })
                             .catch(error => {
                                 console.log(error)
                             })
-                        
                     })
                     .catch(error => {
                         console.log(error)
