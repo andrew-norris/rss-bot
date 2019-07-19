@@ -95,6 +95,7 @@ async function postFeeds(req, res) {
                             webhooks.forEach(webhook => {
                                 let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
                                 requestManager.post(options, (error, response, body) => {
+                                    
                                 })
                             })
                             res.send(attachments)

@@ -146,7 +146,7 @@ exports.filterOldPosts = async function(items, topicName) {
                     }
                 })
                 let date = new Date()
-                date.setHours(date.getHours() - 7)
+                date.setHours(date.getHours() - 3)
             
                 oldPosts = oldPosts.filter(item => Date.parse(item.pubDate) > Date.parse(date))
                 console.log(oldPosts.length)
