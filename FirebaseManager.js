@@ -36,7 +36,7 @@ exports.setChannel = function(jsonResponse) {
       });
 }
 
-exports.createTopicDocument = async function(topicUrl, documentName, topics, channelMap) {
+exports.subscribeToTopic = async function(documentName, channelMap) {
     console.log(`createTopicDocument documentName:${documentName}`)
     let subscribedChannelReference = firestore.collection('topics')
         .doc(documentName)
