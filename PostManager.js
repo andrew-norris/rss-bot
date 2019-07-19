@@ -15,6 +15,4 @@ function removeOutdatedItems(items) {
     date.setHours(date.getHours() - 6)
 
     return items.filter(item => Date.parse(item.pubDate) > Date.parse(date))
-
-    
 }

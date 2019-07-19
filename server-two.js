@@ -82,21 +82,29 @@ async function postFeeds(req, res) {
                 feedManager.getFeedItems(topic['feedUrl'])
                     .then(items => { 
                         let filteredItems = postManager.getNewPosts(items)
-                        console.log(`filteredItems: ${filteredItems}`)
-                        let attachments = feedManager.getAttachments(filteredItems)
-                        // let attachments = feedManager.getAttachments(items)
-                        firebaseManager.getSubscribedChannels('onetwo')
-                        .then( webhooks => {
-                            webhooks.forEach(webhook => {
-                                console.log(webhook)
-                                let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
-                                request.post(options, (error, response, body) => {
-                                    console.log(error)
+                        console.log(`topic id: ${JSON.stringify(topic)}`)
+                        firebaseManager.filterOldPosts(filteredItems, topic['topic'])
+                            .then( newPosts => {
+                                console.log(`filteredItems: ${filteredItems}`)
+                                let attachments = feedManager.getAttachments(newPosts)
+                                // let attachments = feedManager.getAttachments(items)
+                                firebaseManager.getSubscribedChannels('onetwo')
+                                .then( webhooks => {
+                                    webhooks.forEach(webhook => {
+                                        console.log(webhook)
+                                        let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
+                                        request.post(options, (error, response, body) => {
+                                            console.log(error)
+                                        })
+                                    })
                                 })
+                                
+                                res.send(JSON.stringify(items))
                             })
-                        })
+                            .catch(error => {
+                                console.log(error)
+                            })
                         
-                        res.send(JSON.stringify(items))
                     })
                     .catch(error => {
                         console.log(error)
