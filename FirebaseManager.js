@@ -117,7 +117,10 @@ exports.filterOldPosts = async function(items, topicName) {
         topicReference
             .get()
             .then(topic => {
-                let oldPosts = topic.data().posts
+                var oldPosts = topic.data().posts
+                if (!oldPosts) {
+                    oldPosts = []
+                }
                 var newPosts = items
 
                 if (oldPosts.length > 0) {
