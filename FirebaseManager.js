@@ -145,11 +145,27 @@ exports.filterOldPosts = async function(items, topicName) {
                         pubDate: post['pubDate']
                     }
                 })
-                console.log(`titles: ${titles}`)
+                let date = new Date()
+                date.setHours(date.getHours() - 7)
+            
+                oldPosts = oldPosts.filter(item => Date.parse(item.pubDate) > Date.parse(date))
+                console.log(oldPosts.length)
+                oldPosts = oldPosts.concat(titles)
 
-                let itemsToSave = [ ...new Set(titles.concat(oldPosts)) ]
+                console.log(oldPosts.length)
 
-                console.log(`itemsToSave: ${itemsToSave}`)
+                let itemsToSave = oldPosts.filter((post, index, self) => {
+                    let foundIndex = self.findIndex(p => {
+                        console.log(`p title: ${p['title']}, post title: ${post['title']}`)
+                        return p['title'] === post['title']
+                    })
+                    console.log(`index: ${index}, foundIndex: ${foundIndex}`)
+                    return foundIndex === index
+                })
+
+                console.log(itemsToSave.length)
+
+
 
                 topicReference.update({
                     posts: itemsToSave
@@ -165,6 +181,7 @@ function includes(oldPosts, item) {
     var contains = false
     oldPosts.forEach(post => {
         console.log(JSON.stringify(post['title']))
+
         if (post['title'] == item['title']) {
             contains = true
         }
