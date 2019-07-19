@@ -125,22 +125,49 @@ exports.filterOldPosts = async function(items, topicName) {
 
                 if (oldPosts.length > 0) {
                     newPosts = items.filter(item => {
-                        return !oldPosts.includes(item.title)
+                        let itemMap = {
+                            title: item['title'],
+                            pubDate: item['pubDate']
+                        }
+                        console.log(`itemmap ${itemMap}`)
+                        console.log(`oldposts includes it: ${oldPosts.includes(itemMap)}`)
+                        return !includes(oldPosts, item)
                     })    
                 }
 
                 console.log(`newPosts: ${newPosts}`)
 
+                
+
                 let titles = items.map(post => {
-                    return post['title']
+                    return {
+                        title: post['title'],
+                        pubDate: post['pubDate']
+                    }
                 })
+                console.log(`titles: ${titles}`)
+
+                let itemsToSave = [ ...new Set(titles.concat(oldPosts)) ]
+
+                console.log(`itemsToSave: ${itemsToSave}`)
 
                 topicReference.update({
-                    posts: titles
+                    posts: itemsToSave
                 })    
                 
                 resolve(newPosts)
             })
         
     })
+}
+
+function includes(oldPosts, item) {
+    var contains = false
+    oldPosts.forEach(post => {
+        console.log(JSON.stringify(post['title']))
+        if (post['title'] == item['title']) {
+            contains = true
+        }
+    })
+    return contains
 }
