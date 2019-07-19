@@ -103,6 +103,8 @@ async function postFeeds(req, res) {
                                     })
                                 
                                     res.send(JSON.stringify(items))
+                                } else {
+                                    res.send("No new items")
                                 }
                             })
                             .catch(error => {
@@ -130,7 +132,5 @@ async function testPost(req, res) {
     request.post(options, (error, response, body) => {              
         res.send(response)
     });
-    
-
 }
 
