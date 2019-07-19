@@ -63,7 +63,6 @@ exports.getDocumentName = function(topics) {
 
 exports.getAttachments = function(items) {
     var attachments = []
-    items = items.slice(0,10)
     items.forEach(function(item) {
         attachments.push(createAttachment(item))
     })

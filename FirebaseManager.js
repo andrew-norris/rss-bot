@@ -9,7 +9,6 @@ const {
 
 var firebase = require('firebase/app');
 require('firebase/firestore');
-let admin = require('firebase-admin')
 
 var firebaseConfig = {
     apiKey: firebaseApiKey,
@@ -79,6 +78,7 @@ exports.getTopics = async function() {
         .then(topicQuerySnapShot => {
             let topics = topicQuerySnapShot.docs.map(topic => {
                 return {
+                    'topic': topic.id,
                     'feedUrl': topic.data().rss_url
                 }
             })
@@ -97,13 +97,45 @@ exports.getSubscribedChannels = async function(topicDocumentName) {
             .doc(topicDocumentName)
             .collection('subscribed-channels')
             .get()
-            .then(subscribedChannelsQuerySnapShot => {
-                let webhooks = subscribedChannelsQuerySnapShot.docs.map(channel => {
+            .then(channelsSnapshot => {
+                let webhooks = channelsSnapshot.docs.map(channel => {
 
                     return channel.data().webhook_url
                 })
                 console.log(webhooks)
                 resolve(webhooks)
             })
+    })
+}
+
+exports.filterOldPosts = async function(items, topicName) {
+    console.log('filter old posts')
+
+    let topicReference = firestore.collection('topics')
+        .doc(topicName)
+    return new Promise(resolve => {
+        topicReference
+            .get()
+            .then(topic => {
+                let oldPosts = topic.data().posts
+                var newPosts = items
+
+                if (oldPosts.length > 0) {
+                    newPosts = items.filter(item => {
+                        oldPosts.includes(item.title)
+                    })    
+                }
+
+                let titles = items.map(post => {
+                    return post['title']
+                })
+
+                topicReference.update({
+                    posts: titles
+                })    
+                
+                resolve(newPosts)
+            })
+        
     })
 }

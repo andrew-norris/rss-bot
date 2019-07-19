@@ -12,6 +12,7 @@ const firebaseManager = require('./FirebaseManager')
 const feedManager = require('./FeedManager')
 const slackManager = require('./SlackManager')
 const requestManager = require('./RequestManager')
+const postManager = require('./PostManager')
 
 //Imports
 const express = require('express')
@@ -80,20 +81,35 @@ async function postFeeds(req, res) {
             topics.forEach(topic => {
                 feedManager.getFeedItems(topic['feedUrl'])
                     .then(items => { 
-                        let attachments = feedManager.getAttachments(items)
-                        firebaseManager.getSubscribedChannels('onetwo')
-                        .then( webhooks => {
-                            webhooks.forEach(webhook => {
-                                console.log(webhook)
-                                let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
-                                request.post(options, (error, response, body) => {
-                                    console.log(error)
-                                })
+                        let filteredItems = postManager.getNewPosts(items)
+                        console.log(`topic id: ${JSON.stringify(topic)}`)
+                        firebaseManager.filterOldPosts(filteredItems, topic['topic'])
+                            .then( newPosts => {
+                                let attachments = feedManager.getAttachments(newPosts)
+                                if (attachments.length != 0) {
+                                    // let attachments = feedManager.getAttachments(items)
+                                    firebaseManager.getSubscribedChannels('onetwo')
+                                    .then( webhooks => {
+                                        webhooks.forEach(webhook => {
+                                            console.log(webhook)
+                                            let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
+                                            request.post(options, (error, response, body) => {
+                                                console.log(error)
+                                            })
+                                        })
+                                    })
+                                    .catch(error => {
+                                        console.log(error)
+                                    })
+                                
+                                    res.send(JSON.stringify(items))
+                                } else {
+                                    res.send("No new items")
+                                }
                             })
-                        })
-                        
-                    
-                        res.send(JSON.stringify(items))
+                            .catch(error => {
+                                console.log(error)
+                            })
                     })
                     .catch(error => {
                         console.log(error)
@@ -116,7 +132,5 @@ async function testPost(req, res) {
     request.post(options, (error, response, body) => {              
         res.send(response)
     });
-    
-
 }
 
