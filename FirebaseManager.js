@@ -133,7 +133,7 @@ exports.filterOldPosts = async function(items, topicName) {
                 topicReference.update({
                     posts: titles
                 })    
-
+                
                 resolve(newPosts)
             })
         

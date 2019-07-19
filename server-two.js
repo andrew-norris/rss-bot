@@ -85,19 +85,21 @@ async function postFeeds(req, res) {
                         console.log(`topic id: ${JSON.stringify(topic)}`)
                         firebaseManager.filterOldPosts(filteredItems, topic['topic'])
                             .then( newPosts => {
-                                console.log(`filteredItems: ${filteredItems}`)
                                 let attachments = feedManager.getAttachments(newPosts)
                                 // let attachments = feedManager.getAttachments(items)
                                 firebaseManager.getSubscribedChannels('onetwo')
-                                .then( webhooks => {
-                                    webhooks.forEach(webhook => {
-                                        console.log(webhook)
-                                        let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
-                                        request.post(options, (error, response, body) => {
-                                            console.log(error)
+                                    .then( webhooks => {
+                                        webhooks.forEach(webhook => {
+                                            console.log(webhook)
+                                            let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
+                                            request.post(options, (error, response, body) => {
+                                                console.log(error)
+                                            })
                                         })
                                     })
-                                })
+                                    .catch(error => {
+                                        console.log(error)
+                                    })
                                 
                                 res.send(JSON.stringify(items))
                             })
