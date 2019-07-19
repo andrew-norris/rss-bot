@@ -24,22 +24,12 @@ exports.getMessegeOptions = function(webhookUrl, feedTitle, attachments) {
             {
                 "text": feedTitle,
                 "attachments": attachments
-                // [
-                //     {
-                //         "fallback": "Plan a vacation",
-                //         "author_name": "Owner: rdesoto",
-                //         "title": "Plan a vacation",
-                //         "text": "https://news.google.com/rss/search?hl=en-CA&gl=CA&ceid=CA:en&q=china"
-                //     },
-                //     {
-                //         "fallback": "Plan a vacation",
-                //         "author_name": "Owner: rdesoto",
-                //         "title": "Plan a vacation",
-                //         "text": "I've been working too hard, it's time for a break."
-                //     }
-                // ]
             }
             
     }
+}
+
+exports.buildSubscribeWidget = function()  {
+    
 }
 

@@ -102,7 +102,6 @@ exports.getSubscribedChannels = async function(topicDocumentName) {
 
                     return channel.data().webhook_url
                 })
-                console.log(webhooks)
                 resolve(webhooks)
             })
     })
@@ -125,19 +124,9 @@ exports.filterOldPosts = async function(items, topicName) {
 
                 if (oldPosts.length > 0) {
                     newPosts = items.filter(item => {
-                        let itemMap = {
-                            title: item['title'],
-                            pubDate: item['pubDate']
-                        }
-                        console.log(`itemmap ${itemMap}`)
-                        console.log(`oldposts includes it: ${oldPosts.includes(itemMap)}`)
                         return !includes(oldPosts, item)
                     })    
                 }
-
-                console.log(`newPosts: ${newPosts}`)
-
-                
 
                 let titles = items.map(post => {
                     return {
@@ -145,27 +134,19 @@ exports.filterOldPosts = async function(items, topicName) {
                         pubDate: post['pubDate']
                     }
                 })
+
                 let date = new Date()
                 date.setHours(date.getHours() - 3)
             
                 oldPosts = oldPosts.filter(item => Date.parse(item.pubDate) > Date.parse(date))
-                console.log(oldPosts.length)
                 oldPosts = oldPosts.concat(titles)
-
-                console.log(oldPosts.length)
 
                 let itemsToSave = oldPosts.filter((post, index, self) => {
                     let foundIndex = self.findIndex(p => {
-                        console.log(`p title: ${p['title']}, post title: ${post['title']}`)
                         return p['title'] === post['title']
                     })
-                    console.log(`index: ${index}, foundIndex: ${foundIndex}`)
                     return foundIndex === index
                 })
-
-                console.log(itemsToSave.length)
-
-
 
                 topicReference.update({
                     posts: itemsToSave

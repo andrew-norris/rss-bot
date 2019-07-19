@@ -87,7 +87,6 @@ async function postFeeds(req, res) {
 
                 Promise.all([attachmentsPromise, webhookPromise])
                     .then (results => {
-                        console.log(`results ${results}`)
                         let attachments = feedManager.getAttachments(results[0])
                         let webhooks = results[1]
 
@@ -95,7 +94,7 @@ async function postFeeds(req, res) {
                             webhooks.forEach(webhook => {
                                 let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
                                 requestManager.post(options, (error, response, body) => {
-                                    
+
                                 })
                             })
                             res.send(attachments)
