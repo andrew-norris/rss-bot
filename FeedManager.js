@@ -71,6 +71,7 @@ exports.getAttachments = function(items) {
 
 function createAttachment(item) {
     let titleMap = splitTitle(item.title)
+    console.log(`create attachment#titleMap: ${titleMap}`)
     
     return {
         "author_name": titleMap['author'],

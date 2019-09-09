@@ -102,7 +102,6 @@ exports.getSubscribedChannels = async function(topicDocumentName) {
 
                     return channel.data().webhook_url
                 })
-                console.log(webhooks)
                 resolve(webhooks)
             })
     })
@@ -117,25 +116,56 @@ exports.filterOldPosts = async function(items, topicName) {
         topicReference
             .get()
             .then(topic => {
-                let oldPosts = topic.data().posts
+                var oldPosts = topic.data().posts
+                if (!oldPosts) {
+                    oldPosts = []
+                }
                 var newPosts = items
 
                 if (oldPosts.length > 0) {
                     newPosts = items.filter(item => {
-                        oldPosts.includes(item.title)
+                        return !includes(oldPosts, item)
                     })    
                 }
 
                 let titles = items.map(post => {
-                    return post['title']
+                    return {
+                        title: post['title'],
+                        pubDate: post['pubDate']
+                    }
+                })
+
+                let date = new Date()
+                date.setHours(date.getHours() - 3)
+            
+                oldPosts = oldPosts.filter(item => Date.parse(item.pubDate) > Date.parse(date))
+                oldPosts = oldPosts.concat(titles)
+
+                let itemsToSave = oldPosts.filter((post, index, self) => {
+                    let foundIndex = self.findIndex(p => {
+                        return p['title'] === post['title']
+                    })
+                    return foundIndex === index
                 })
 
                 topicReference.update({
-                    posts: titles
+                    posts: itemsToSave
                 })    
                 
                 resolve(newPosts)
             })
         
     })
+}
+
+function includes(oldPosts, item) {
+    var contains = false
+    oldPosts.forEach(post => {
+        console.log(JSON.stringify(post['title']))
+
+        if (post['title'] == item['title']) {
+            contains = true
+        }
+    })
+    return contains
 }
