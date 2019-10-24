@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "rules": "(firestore.rules)",
+    "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
   "functions": {
@@ -9,7 +9,7 @@
     ]
   },
   "hosting": {
-    "public": "(public)",
+    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
