@@ -52,3 +52,10 @@ setChannelPromise = function(response) {
         webhook_url: response.incoming_webhook.url
     });
 }
+
+exports.postFeeds = functions.pubsub
+    .schedule('every 2 minutes from 7:00 to 18:00')
+    .onRun((context) => {
+        console.log("We scheduling now");
+        return null;
+    })
