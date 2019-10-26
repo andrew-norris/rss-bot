@@ -18,16 +18,7 @@ exports.redirect = functions.https.onRequest((req, res) => {
     }).then(response => {
         console.log(response);
         if(response.ok) {
-            let channel_id = response.incoming_webhook.channel_id
-            let channel_ref = firestore.collection(channels)
-                .doc(channel_id)
-            return channel_ref.set({
-                team_name: response.team_name,
-                team_id: response.team_id,
-                user_id: response.user_id,
-                channel: response.incoming_webhook.channel,
-                webhook_url: response.incoming_webhook.url
-            });
+            return setChannelPromise(response)
         }
         return null;
     }).then(result => {
@@ -46,4 +37,17 @@ getOptions = function(query_code) {
             '&client_secret='+functions.config().slack.client_secret,
         method: 'GET'
       }
+}
+
+setChannelPromise = function(response) {
+    let channel_id = response.incoming_webhook.channel_id
+    let channel_ref = firestore.collection(channels)
+        .doc(channel_id)
+    return channel_ref.set({
+        team_name: response.team_name,
+        team_id: response.team_id,
+        user_id: response.user_id,
+        channel: response.incoming_webhook.channel,
+        webhook_url: response.incoming_webhook.url
+    });
 }
