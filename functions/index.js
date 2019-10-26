@@ -56,45 +56,109 @@ setChannelPromise = function(response) {
     });
 }
 
+// exports.postFeeds = functions.pubsub
+//     .schedule('every 2 minutes from 7:00 to 18:00')
+//     .onRun((context) => {
+//         console.log("We scheduling now");
+//         getTopics()
+//             .then(topics => {
+//                 var topicPostPromises = []
+//                 topics.forEach(topic => {
+//                     let attachmentsPromise = getFeedItems(topic[feedUrl])
+//                         .then(items => {
+//                             let newItems = getNewPosts(items)
+//                             return filterOldPosts(newItems, topic[topic])
+//                         });
+//                     let webhookPromise = getSubscribedChannels(topic[topic]);
+
+//                     let topicPostPromise = Promise.all([attachmentsPromise, webhookPromise])
+//                         .then(results => {
+//                             let attachments = getAttachments(results[0]);
+//                             let webhooks = results[1]
+
+//                             var postPromises = []
+
+//                             if (attachments.length > 0) {
+//                                 webhooks.forEach(webhook => {
+//                                     let options = getMessageOptions(webhook, topic[topic], attachments)
+//                                     postPromises.push(postPromise(options))
+//                                 })
+//                                 return Promise.all(postPromises)
+//                             }
+//                         }).then(results => {
+//                             return results
+//                         }).catch(error => {
+//                             console.log(error)
+//                             return error
+//                         });
+//                     topicPostPromises.push(topicPostPromise)
+//                 })
+//                 return topicPostPromises
+//             }).catch(error => {
+//                 return error
+//             })
+//     });
+
 exports.postFeeds = functions.pubsub
     .schedule('every 2 minutes from 7:00 to 18:00')
     .onRun((context) => {
         console.log("We scheduling now");
-        getTopics()
-            .then(topics => {
+        getTopics().then(topics => {
+                var feedItemsPromises = []
                 topics.forEach(topic => {
-                    let attachmentsPromise = getFeedItems(topic[feedUrl])
-                        .then(items => {
-                            let newItems = getNewPosts(items)
-                            return filterOldPosts(newItems, topic[topic])
-                        });
-                    let webhookPromise = getSubscribedChannels(topic[topic]);
-
-                    Promise.all([attachmentsPromise, webhookPromise])
-                        .then(results => {
-                            let attachments = getAttachments(results[0]);
-                            let webhooks = results[1]
-
-                            var postPromises = []
-
-                            if (attachments.length > 0) {
-                                webhooks.forEach(webhook => {
-                                    let options = getMessageOptions(webhook, topic[topic], attachments)
-                                    postPromises.push(postPromise(options))
-                                })
-                                return Promise.all(postPromises)
-                            }
-                        }).then(results => {
-                            return results
-                        }).catch(error => {
-                            console.log(error)
-                            return error
-                        })
+                    let feedItemsPromise = getFeedItems(topic
+)
+                    attachmentsPromises.push(feedItemsPromise)
                 })
+                return Promise.all(feedItemsPromises);
+            }).then(results => {
+                var filteredPostsPromises = []
+                results.forEach(result => {
+                    let newItems = getNewPosts(result['items'])
+                    let filteredPostsPromise = filterOldPosts(newItems, result['topic'])
+                    filteredPostsPromises.push(filteredPostsPromise)
+                })
+                return Promise.all(filteredPostsPromises);
+            }).then(results => {
+                console.log(results);
+                return results;
             }).catch(error => {
+                console.log(error)
                 return error
             })
-    });
+            return null;
+        });
+                        // .then(items => {
+                        //     let newItems = getNewPosts(items)
+                        //     return filterOldPosts(newItems, topic[topic])
+                        // });
+    //                 let webhookPromise = getSubscribedChannels(topic[topic]);
+
+    //                 let topicPostPromise = Promise.all([attachmentsPromise, webhookPromise])
+    //                     .then(results => {
+    //                         let attachments = getAttachments(results[0]);
+    //                         let webhooks = results[1]
+
+    //                         var postPromises = []
+
+    //                         if (attachments.length > 0) {
+    //                             webhooks.forEach(webhook => {
+    //                                 let options = getMessageOptions(webhook, topic[topic], attachments)
+    //                                 postPromises.push(postPromise(options))
+    //                             })
+    //                             return Promise.all(postPromises)
+    //                         }
+    //                     }).then(results => {
+    //                         return results
+    //                     }).catch(error => {
+    //                         console.log(error)
+    //                         return error
+    //                     });
+    //                 topicPostPromises.push(topicPostPromise)
+    //             })
+    //             return topicPostPromises
+    //         })
+    // });
 
 function postPromise(options) {
     return new Promise(resolve => {
@@ -134,17 +198,19 @@ function removeOutdatedItems(items) {
     return items.filter(item => Date.parse(item.pubDate) > Date.parse(date))
 }
 
-getFeedItems = async function(feedUrl) {
+getFeedItems = async function(topic) {
     return new Promise(resolve => {
-        parser.parseURL(feedUrl)
+        parser.parseURL(topic[feedUrl])
             .then(feed => {
-                resolve(feed.items.sort(comparePubDates))
+                resolve({
+                    'items': feed.items.sort(comparePubDates),
+                    'topic': topic['topic']
+                })
             })
             .catch(error => {
                 console.log(error)
             })
-    })
-    
+    })   
 }
 
 function comparePubDates(a, b) {
@@ -255,7 +321,10 @@ filterOldPosts = async function(items, topicName) {
                     posts: itemsToSave
                 })    
                 
-                resolve(newPosts)
+                resolve({
+                    'newPosts': newPosts,
+                    'topic': topicName
+                })
             })
         
     })
