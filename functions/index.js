@@ -8,5 +8,18 @@ const functions = require('firebase-functions');
 // });
 
 exports.redirect = functions.https.onRequest((request, response) => {
-    response.send("Hello");
+    let code = request.query.code
+    let options = getOptions(code)
+    response.send(options)
 }); 
+
+getOptions = function(queryCode) {
+    return {
+        uri: functions.config().slack.oauth_uri
+            + '?' +
+            queryCode +
+            '&client_id='+functions.config().slack.client_id+
+            '&client_secret='+functions.config().slack.client_secret,
+        method: 'POST'
+      }
+}
