@@ -19,8 +19,9 @@ exports.redirect = functions.https.onRequest((req, res) => {
         console.log(response);
         if(response.ok) {
             return setChannelPromise(response)
+        } else {
+            return null;
         }
-        return null;
     }).then(result => {
         res.send(result)
         return result
