@@ -19,6 +19,7 @@
     "rss-parser": "^3.7.2"
   },
   "devDependencies": {
-    "eslint": "^6.0.1"
+    "eslint": "^6.0.1",
+    "firebase-functions-test": "^0.1.6"
   }
 }
