@@ -60,71 +60,13 @@ setChannelPromise = function(response) {
     });
 }
 
-// exports.postFeeds = functions.pubsub
-//     .schedule('every 2 minutes from 7:00 to 18:00')
-//     .onRun((context) => {
-//         console.log("We scheduling now");
-//         getTopics()
-//             .then(topics => {
-//                 var topicPostPromises = []
-//                 topics.forEach(topic => {
-//                     let attachmentsPromise = getFeedItems(topic[feedUrl])
-//                         .then(items => {
-//                             let newItems = getNewPosts(items)
-//                             return filterOldPosts(newItems, topic[topic])
-//                         });
-//                     let webhookPromise = getSubscribedChannels(topic[topic]);
-
-//                     let topicPostPromise = Promise.all([attachmentsPromise, webhookPromise])
-//                         .then(results => {
-//                             let attachments = getAttachments(results[0]);
-//                             let webhooks = results[1]
-
-//                             var postPromises = []
-
-//                             if (attachments.length > 0) {
-//                                 webhooks.forEach(webhook => {
-//                                     let options = getMessageOptions(webhook, topic[topic], attachments)
-//                                     postPromises.push(postPromise(options))
-//                                 })
-//                                 return Promise.all(postPromises)
-//                             }
-//                         }).then(results => {
-//                             return results
-//                         }).catch(error => {
-//                             console.log(error)
-//                             return error
-//                         });
-//                     topicPostPromises.push(topicPostPromise)
-//                 })
-//                 return topicPostPromises
-//             }).catch(error => {
-//                 return error
-//             })
-//     });
-
-exports.postFeeds = functions.pubsub
-    .schedule('every 6 hours')
-    .onRun((context) => {
-
-        // let options = getMessageOptions('https://hooks.slack.com/services/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', 'onetwo', 'string')
-        // new Promise(resolve => {
-        //     request(options, (error, response, body) => {
-        //         resolve(body)
-        //     })
-        // }).then(result => {
-        //     console.log(result)
-        //     return result
-        // }).catch(error => {
-        //     console.log(error)
-        // })
-
-        let topicsPromise = firestore.collection('topics')
-        .get().then(topicQuerySnapShot => {
+exports.postFeeds = functions.pubsub.schedule('every 6 hours').onRun((context) => {
+        let topicsPromise = firestore.collection('topics').get().then(topicQuerySnapShot => {
             let topics = topicQuerySnapShot.docs.map(topic => {
                 return {
                     topic: topic.id,
-                    feedUrl: topic.data().rss_url
+                    feedUrl: topic.data().rss_url,
+                    oldPosts: topic.data().posts
                 }
             })
             return topics
@@ -140,10 +82,76 @@ exports.postFeeds = functions.pubsub
         }).then(feeds => {
             var sortedItems = [];
             feeds.forEach(feed => {
-                sortedItems.push(feed.items.sort(comparePubDates));
+                sortedItems.push(removeOutdatedItems(feed.items.sort(comparePubDates)));
             })
             return sortedItems;
         })
+
+        let filteredFeedsPromise = Promise.all([topicsPromise, feedsItemsPromise]).then(results => {
+            let topics = results[0];
+            let items = results[1];
+            
+            var filteredFeeds = []
+            topics.forEach((topic, index) => {
+                let filteredItems = items[index].filter(item => {
+                    return !includes(topic['oldPosts'], item)
+                });
+                filteredFeeds.push(filteredItems)
+            })
+
+            return filteredFeeds;
+        })
+
+        // filterOldPosts(items, topicName) {
+            //     console.log('filter old posts')
+            
+            //     let topicReference = firestore.collection('topics')
+            //         .doc(topicName)
+            //     return new Promise(resolve => {
+            //         topicReference
+            //             .get()
+            //             .then(topic => {
+            //                 var oldPosts = topic.data().posts
+            //                 if (!oldPosts) {
+            //                     oldPosts = []
+            //                 }
+            //                 var newPosts = items
+            
+            //                 if (oldPosts.length > 0) {
+            //                     newPosts = items.filter(item => {
+            //                         return !includes(oldPosts, item)
+            //                     })    
+            //                 }
+            
+            //                 let titles = items.map(post => {
+            //                     return {
+            //                         title: post['title'],
+            //                         pubDate: post['pubDate']
+            //                     }
+            //                 })
+            
+            //                 let date = new Date()
+            //                 date.setHours(date.getHours() - 3)
+                        
+            //                 oldPosts = oldPosts.filter(item => Date.parse(item.pubDate) > Date.parse(date))
+            //                 oldPosts = oldPosts.concat(titles)
+            
+            //                 let itemsToSave = oldPosts.filter((post, index, self) => {
+            //                     let foundIndex = self.findIndex(p => {
+            //                         return p['title'] === post['title']
+            //                     })
+            //                     return foundIndex === index
+            //                 })
+            
+            //                 topicReference.update({
+            //                     posts: itemsToSave
+            //                 })    
+                            
+            //                 resolve(newPosts)
+            //             })
+                    
+            //     })
+            // }
 
         let webhooksPromise = topicsPromise.then(topics => {
             var webhookPromises = [];
@@ -166,17 +174,14 @@ exports.postFeeds = functions.pubsub
             return webhookArrays;
         })
 
-        return Promise.all([topicsPromise, feedsItemsPromise, webhooksPromise]).then(result => {
+        return Promise.all([topicsPromise, filteredFeedsPromise, webhooksPromise]).then(result => {
             let topics = result[0];
-            let feedItems = result[1];
+            let filteredFeeds = result[1];
             let webhooks = result[2];
-            console.log(topics);
-            console.log(feedItems);
-            console.log(webhooks);
 
             let postPromises = []
             topics.forEach((topic, index) => {
-                let attachments = getAttachments(feedItems[index]);
+                let attachments = getAttachments(filteredFeeds[index]);
                 if (attachments.length > 0) {
                     webhooks[index].forEach(webhook => {
                         let options = getMessageOptions(webhook, topic['topic'], attachments.slice(0,10))
@@ -190,10 +195,8 @@ exports.postFeeds = functions.pubsub
                     
                 }
             })
-            console.log(postPromises)
             return Promise.all(postPromises)
         }).then(results=> {
-            console.log(results);
             return results;
         }).catch(error => {
             console.log(error);
@@ -260,14 +263,6 @@ exports.postFeeds = functions.pubsub
     //         })
     // });
 
-function postPromise(options) {
-    return new Promise(resolve => {
-        request.post(options, (error, response, body) => {
-            resolve(response)
-        })
-    })
-}
-
 function getMessageOptions(webhookUrl, feedTitle, attachments) {
     return {
         url: webhookUrl,
@@ -279,15 +274,6 @@ function getMessageOptions(webhookUrl, feedTitle, attachments) {
             }
             
     }
-}
-
-getNewPosts = function(items) {
-    console.log(items.length)
-
-    let newItems = removeOutdatedItems(items)
-    console.log(newItems.length)
-
-    return newItems
 }
 
 function removeOutdatedItems(items) {
@@ -306,82 +292,17 @@ function comparePubDates(a, b) {
     }
 }
 
-// getTopics = async function() {
-//     console.log('getTopics')
-//     return new Promise( resolve => {
-//         firestore.collection('topics')
-//         .get()
-//         .then(topicQuerySnapShot => {
-//             let topics = topicQuerySnapShot.docs.map(topic => {
-//                 return {
-//                     topic: topic.id,
-//                     feedUrl: topic.data().rss_url
-//                 }
-//             })
-//             resolve(topics)
-//         })
-//         .catch(error => {
-//             console.log(error)
-//         })
-//     })
-// }
+function includes(oldPosts, item) {
+    var contains = false
+    oldPosts.forEach(post => {
+        console.log(JSON.stringify(post['title']))
 
-
-
-// async function filterOldPosts(items, topicName) {
-//     console.log('filter old posts')
-
-//     let topicReference = firestore.collection('topics')
-//         .doc(topicName)
-//     return new Promise(resolve => {
-//         topicReference
-//             .get()
-//             .then(topic => {
-//                 var oldPosts = topic.data().posts
-//                 if (!oldPosts) {
-//                     oldPosts = []
-//                 }
-//                 var newPosts = items
-
-//                 if (oldPosts.length > 0) {
-//                     newPosts = items.filter(item => {
-//                         return !includes(oldPosts, item)
-//                     })    
-//                 }
-
-//                 let titles = items.map(post => {
-//                     return {
-//                         title: post['title'],
-//                         pubDate: post['pubDate']
-//                     }
-//                 })
-
-//                 let date = new Date()
-//                 date.setHours(date.getHours() - 3)
-            
-//                 oldPosts = oldPosts.filter(item => Date.parse(item.pubDate) > Date.parse(date))
-//                 oldPosts = oldPosts.concat(titles)
-
-//                 let itemsToSave = oldPosts.filter((post, index, self) => {
-//                     let foundIndex = self.findIndex(p => {
-//                         return p['title'] === post['title']
-//                     })
-//                     return foundIndex === index
-//                 })
-
-//                 topicReference.update({
-//                     posts: itemsToSave
-//                 })    
-                
-//                 resolve({
-//                     'newPosts': newPosts,
-//                     'topic': topicName
-//                 })
-//             })
-        
-//     })
-// }
-
+        if (post['title'] == item['title']) {
+            contains = true
+        }
+    })
+    return contains
+}
 
 getAttachments = function(items) {
     var attachments = []
