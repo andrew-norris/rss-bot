@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const request = require('request');
+const requestPromise = require('request-promise-native');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
@@ -9,6 +10,9 @@ const channels = 'channels';
 const topics = 'topics';
 const topic = 'topic';
 const feedUrl = 'feedUrl';
+
+let Parser = require('rss-parser')
+let parser = new Parser()
 
 exports.redirect = functions.https.onRequest((req, res) => {
     console.log(req)
@@ -100,34 +104,130 @@ setChannelPromise = function(response) {
 //     });
 
 exports.postFeeds = functions.pubsub
-    .schedule('every 2 minutes from 7:00 to 18:00')
+    .schedule('every 15 minutes')
     .onRun((context) => {
-        console.log("We scheduling now");
-        getTopics().then(topics => {
-                var feedItemsPromises = []
-                topics.forEach(topic => {
-                    let feedItemsPromise = getFeedItems(topic
-)
-                    attachmentsPromises.push(feedItemsPromise)
-                })
-                return Promise.all(feedItemsPromises);
-            }).then(results => {
-                var filteredPostsPromises = []
-                results.forEach(result => {
-                    let newItems = getNewPosts(result['items'])
-                    let filteredPostsPromise = filterOldPosts(newItems, result['topic'])
-                    filteredPostsPromises.push(filteredPostsPromise)
-                })
-                return Promise.all(filteredPostsPromises);
-            }).then(results => {
-                console.log(results);
-                return results;
-            }).catch(error => {
-                console.log(error)
-                return error
+
+        // let options = getMessageOptions('https://hooks.slack.com/services/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', 'onetwo', 'string')
+        // new Promise(resolve => {
+        //     request(options, (error, response, body) => {
+        //         resolve(body)
+        //     })
+        // }).then(result => {
+        //     console.log(result)
+        //     return result
+        // }).catch(error => {
+        //     console.log(error)
+        // })
+
+        let topicsPromise = firestore.collection('topics')
+        .get().then(topicQuerySnapShot => {
+            let topics = topicQuerySnapShot.docs.map(topic => {
+                return {
+                    topic: topic.id,
+                    feedUrl: topic.data().rss_url
+                }
             })
-            return null;
-        });
+            return topics
+        })
+
+        let feedsItemsPromise = topicsPromise.then(topics => {
+            var feedItemsPromises = [];
+            topics.forEach(topic => {
+                let feedItemsPromise = parser.parseURL(topic['feedUrl']);
+                feedItemsPromises.push(feedItemsPromise);
+            })
+            return Promise.all(feedItemsPromises);
+        }).then(feeds => {
+            var sortedItems = [];
+            feeds.forEach(feed => {
+                sortedItems.push(feed.items.sort(comparePubDates));
+            })
+            return sortedItems;
+        })
+
+        let webhooksPromise = topicsPromise.then(topics => {
+            var webhookPromises = [];
+            topics.forEach(topic => {
+                let webhookPromise = firestore.collection('topics')
+                    .doc(topic['topic'])
+                    .collection('subscribed-channels')
+                    .get();
+                webhookPromises.push(webhookPromise);
+            })
+            return Promise.all(webhookPromises);  
+        }).then(channelsSnapshots => {
+            var webhookArrays = []
+            channelsSnapshots.forEach(channelsSnapshot => {
+                let webhooks = channelsSnapshot.docs.map(channel => {
+                    return channel.data().webhook_url
+                })
+                webhookArrays.push(webhooks);
+            })
+            return webhookArrays;
+        })
+
+        return Promise.all([topicsPromise, feedsItemsPromise, webhooksPromise]).then(result => {
+            let topics = result[0];
+            let feedItems = result[1];
+            let webhooks = result[2];
+            console.log(topics);
+            console.log(feedItems);
+            console.log(webhooks);
+
+            let postPromises = []
+            topics.forEach((topic, index) => {
+                let attachments = getAttachments(feedItems[index]);
+                if (attachments.length > 0) {
+                    webhooks[index].forEach(webhook => {
+                        let options = getMessageOptions(webhook, topic['topic'], attachments)
+                        let postPromise = new Promise(resolve => {
+                            request.post(options, (error, response, body) => {
+                                resolve(response)
+                            })
+                        })
+                        postPromises.push(postPromise)
+                    })
+                    
+                }
+            })
+            console.log(postPromises)
+            return Promise.all(postPromises)
+        }).then(results=> {
+            console.log(results);
+            return results;
+        }).catch(error => {
+            console.log(error);
+        })
+    });
+            
+       
+
+        // Promise.all([topicsPromise, feedsItemsPromise])
+
+        // getTopics().then(topics => {
+        //         var feedItemsPromises = []
+        //         topics.forEach(topic => {
+        //             let feedItemsPromise = parser.parseURL(topic['feedUrl'])
+        //             attachmentsPromises.push(feedItemsPromise)
+        //         })
+        //         return Promise.all(feedItemsPromises);
+        //     }).then(results => {
+        //         var filteredPostsPromises = []
+        //         results.forEach(result => {
+        //             let newItems = getNewPosts(result['items'])
+        //             let filteredPostsPromise = filterOldPosts(newItems, result['topic'])
+        //             filteredPostsPromises.push(filteredPostsPromise)
+        //         })
+        //         return Promise.all(filteredPostsPromises);
+        //     }).then(results => {
+        //         console.log(results);
+        //         return results;
+        //     }).catch(error => {
+        //         console.log(error)
+        //         return error
+        //     })
+        //     return null;
+        // });
                         // .then(items => {
                         //     let newItems = getNewPosts(items)
                         //     return filterOldPosts(newItems, topic[topic])
@@ -168,9 +268,9 @@ function postPromise(options) {
     })
 }
 
-getMessegeOptions = function(webhookUrl, feedTitle, attachments) {
+function getMessageOptions(webhookUrl, feedTitle, attachments) {
     return {
-        uri: webhookUrl,
+        url: webhookUrl,
         method: 'POST',
         json: 
             {
@@ -198,21 +298,6 @@ function removeOutdatedItems(items) {
     return items.filter(item => Date.parse(item.pubDate) > Date.parse(date))
 }
 
-getFeedItems = async function(topic) {
-    return new Promise(resolve => {
-        parser.parseURL(topic[feedUrl])
-            .then(feed => {
-                resolve({
-                    'items': feed.items.sort(comparePubDates),
-                    'topic': topic['topic']
-                })
-            })
-            .catch(error => {
-                console.log(error)
-            })
-    })   
-}
-
 function comparePubDates(a, b) {
     if (Date.parse(a.pubDate) <= Date.parse(b.pubDate)) {
         return 1
@@ -221,134 +306,86 @@ function comparePubDates(a, b) {
     }
 }
 
-getTopics = async function() {
-    console.log('getTopics')
-    return new Promise( resolve => {
-        firestore.collection('topics')
-        .get()
-        .then(topicQuerySnapShot => {
-            let topics = topicQuerySnapShot.docs.map(topic => {
-                return {
-                    topic: topic.id,
-                    feedUrl: topic.data().rss_url
-                }
-            })
-            resolve(topics)
-        })
-        .catch(error => {
-            console.log(error)
-        })
-    })
-}
+// getTopics = async function() {
+//     console.log('getTopics')
+//     return new Promise( resolve => {
+//         firestore.collection('topics')
+//         .get()
+//         .then(topicQuerySnapShot => {
+//             let topics = topicQuerySnapShot.docs.map(topic => {
+//                 return {
+//                     topic: topic.id,
+//                     feedUrl: topic.data().rss_url
+//                 }
+//             })
+//             resolve(topics)
+//         })
+//         .catch(error => {
+//             console.log(error)
+//         })
+//     })
+// }
 
-async function postFeeds(req, res) {
-    firebaseManager.getTopics()
-        .then(topics => {
-            topics.forEach(topic => {
-                let attachmentsPromise = feedManager.getFeedItems(topic['feedUrl'])
-                    .then(items => {
-                        let filteredItems = postManager.getNewPosts(items)
-                        return firebaseManager.filterOldPosts(filteredItems, topic['topic'])
-                    })
-                let webhookPromise = firebaseManager.getSubscribedChannels('onetwo')
 
-                Promise.all([attachmentsPromise, webhookPromise])
-                    .then (results => {
-                        let attachments = feedManager.getAttachments(results[0])
-                        let webhooks = results[1]
 
-                        if (attachments.length > 0) {
-                            webhooks.forEach(webhook => {
-                                let options = slackManager.getMessegeOptions(webhook, "onetwo", attachments)
-                                requestManager.post(options, (error, response, body) => {
+// async function filterOldPosts(items, topicName) {
+//     console.log('filter old posts')
 
-                                })
-                            })
-                            res.send(attachments)
-                        } else {
-                            res.send('no new items')
-                        }
-                    })
-                    .catch(error => {
-                        console.log(error)
-                    })
-            })
-        })
-}
+//     let topicReference = firestore.collection('topics')
+//         .doc(topicName)
+//     return new Promise(resolve => {
+//         topicReference
+//             .get()
+//             .then(topic => {
+//                 var oldPosts = topic.data().posts
+//                 if (!oldPosts) {
+//                     oldPosts = []
+//                 }
+//                 var newPosts = items
 
-filterOldPosts = async function(items, topicName) {
-    console.log('filter old posts')
+//                 if (oldPosts.length > 0) {
+//                     newPosts = items.filter(item => {
+//                         return !includes(oldPosts, item)
+//                     })    
+//                 }
 
-    let topicReference = firestore.collection('topics')
-        .doc(topicName)
-    return new Promise(resolve => {
-        topicReference
-            .get()
-            .then(topic => {
-                var oldPosts = topic.data().posts
-                if (!oldPosts) {
-                    oldPosts = []
-                }
-                var newPosts = items
+//                 let titles = items.map(post => {
+//                     return {
+//                         title: post['title'],
+//                         pubDate: post['pubDate']
+//                     }
+//                 })
 
-                if (oldPosts.length > 0) {
-                    newPosts = items.filter(item => {
-                        return !includes(oldPosts, item)
-                    })    
-                }
-
-                let titles = items.map(post => {
-                    return {
-                        title: post['title'],
-                        pubDate: post['pubDate']
-                    }
-                })
-
-                let date = new Date()
-                date.setHours(date.getHours() - 3)
+//                 let date = new Date()
+//                 date.setHours(date.getHours() - 3)
             
-                oldPosts = oldPosts.filter(item => Date.parse(item.pubDate) > Date.parse(date))
-                oldPosts = oldPosts.concat(titles)
+//                 oldPosts = oldPosts.filter(item => Date.parse(item.pubDate) > Date.parse(date))
+//                 oldPosts = oldPosts.concat(titles)
 
-                let itemsToSave = oldPosts.filter((post, index, self) => {
-                    let foundIndex = self.findIndex(p => {
-                        return p['title'] === post['title']
-                    })
-                    return foundIndex === index
-                })
+//                 let itemsToSave = oldPosts.filter((post, index, self) => {
+//                     let foundIndex = self.findIndex(p => {
+//                         return p['title'] === post['title']
+//                     })
+//                     return foundIndex === index
+//                 })
 
-                topicReference.update({
-                    posts: itemsToSave
-                })    
+//                 topicReference.update({
+//                     posts: itemsToSave
+//                 })    
                 
-                resolve({
-                    'newPosts': newPosts,
-                    'topic': topicName
-                })
-            })
+//                 resolve({
+//                     'newPosts': newPosts,
+//                     'topic': topicName
+//                 })
+//             })
         
-    })
-}
+//     })
+// }
 
-getSubscribedChannels = async function(topicDocumentName) {
-    console.log('getSubscribedChannels')
-    return new Promise(resolve => {
-        firestore.collection('topics')
-            .doc(topicDocumentName)
-            .collection('subscribed-channels')
-            .get()
-            .then(channelsSnapshot => {
-                let webhooks = channelsSnapshot.docs.map(channel => {
-                    return channel.data().webhook_url
-                })
-                resolve(webhooks)
-            })
-    })
-}
 
 getAttachments = function(items) {
     var attachments = []
-    items.forEach(function(item) {
+    items.forEach(item => {
         attachments.push(createAttachment(item))
     })
     return attachments
