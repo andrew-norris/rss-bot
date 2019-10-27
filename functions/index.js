@@ -104,7 +104,7 @@ setChannelPromise = function(response) {
 //     });
 
 exports.postFeeds = functions.pubsub
-    .schedule('every 15 minutes')
+    .schedule('every 6 hours')
     .onRun((context) => {
 
         // let options = getMessageOptions('https://hooks.slack.com/services/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', 'onetwo', 'string')
@@ -179,7 +179,7 @@ exports.postFeeds = functions.pubsub
                 let attachments = getAttachments(feedItems[index]);
                 if (attachments.length > 0) {
                     webhooks[index].forEach(webhook => {
-                        let options = getMessageOptions(webhook, topic['topic'], attachments)
+                        let options = getMessageOptions(webhook, topic['topic'], attachments.slice(0,10))
                         let postPromise = new Promise(resolve => {
                             request.post(options, (error, response, body) => {
                                 resolve(response)
