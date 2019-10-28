@@ -105,15 +105,24 @@ exports.postFeeds = functions.pubsub.schedule('every 1 hours').onRun((context) =
         Promise.all([topicsPromise, filteredFeedsPromise]).then(results => {
             let topics = results[0];
             let items = results[1];
+            let date = new Date()
+            date.setHours(date.getHours() - 3)
 
             let updatePostsPromises = [];
-            topics.forEach((topic, index) => {
-                let itemsToSave = items[index].map(item => {
+            topics.forEach((topic, index) => {                
+                let postsToKeep = topic['oldPosts'].filter(post => {
+                    Date.parse(post.pubDate) > Date.parse(date);
+                })
+
+                let newPosts = items[index].map(item => {
                     return {
                         title: item['title'],
                         pubDate: item['pubDate']
                     }
                 });
+
+                let itemsToSave = postsToKeep.concat(newPosts)
+
                 let updatePostPromise = firestore.collection('topics').doc(topic['topic']).update({
                     posts: itemsToSave
                 });
