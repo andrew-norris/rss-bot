@@ -111,7 +111,7 @@ exports.postFeeds = functions.pubsub.schedule('every 1 hours').onRun((context) =
             let updatePostsPromises = [];
             topics.forEach((topic, index) => {                
                 let postsToKeep = topic['oldPosts'].filter(post => {
-                    Date.parse(post.pubDate) > Date.parse(date);
+                    return Date.parse(post.pubDate) > Date.parse(date);
                 })
 
                 let newPosts = items[index].map(item => {
