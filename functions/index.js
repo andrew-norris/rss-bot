@@ -103,7 +103,7 @@ exports.subscribe = functions.https.onRequest((req, res) => {
     })
 });
 
-exports.postFeeds = functions.pubsub.schedule('every 1 hours').onRun((context) => {
+exports.postFeeds = functions.pubsub.schedule('every 10 minutes').onRun((context) => {
         let topicsPromise = firestore.collection('topics').get().then(topicQuerySnapShot => {
             let topics = topicQuerySnapShot.docs.map(topic => {
                 return {
@@ -136,10 +136,12 @@ exports.postFeeds = functions.pubsub.schedule('every 1 hours').onRun((context) =
             
             var filteredFeeds = []
             topics.forEach((topic, index) => {
-                let filteredItems = items[index].filter(item => {
-                    return !includes(topic['oldPosts'], item)
-                });
-                filteredFeeds.push(filteredItems)
+                if(topic['oldPosts']) {
+                    let filteredItems = items[index].filter(item => {
+                        return !includes(topic['oldPosts'], item)
+                    });
+                    filteredFeeds.push(filteredItems)
+                }
             })
 
             return filteredFeeds;
@@ -152,17 +154,23 @@ exports.postFeeds = functions.pubsub.schedule('every 1 hours').onRun((context) =
             date.setHours(date.getHours() - 3)
 
             let updatePostsPromises = [];
-            topics.forEach((topic, index) => {                
-                let postsToKeep = topic['oldPosts'].filter(post => {
-                    return Date.parse(post.pubDate) > Date.parse(date);
-                })
-
-                let newPosts = items[index].map(item => {
-                    return {
-                        title: item['title'],
-                        pubDate: item['pubDate']
-                    }
-                });
+            topics.forEach((topic, index) => {
+                let postsToKeep = []
+                if(topic['oldPosts']) {
+                    postsToKeep = topic['oldPosts'].filter(post => {
+                        return Date.parse(post.pubDate) > Date.parse(date);
+                    })
+                }
+                 
+                let newPosts = [];
+                if (items) {
+                    newPosts = items[index].map(item => {
+                        return {
+                            title: item['title'],
+                            pubDate: item['pubDate']
+                        }
+                    });
+                }
 
                 let itemsToSave = postsToKeep.concat(newPosts)
 
@@ -206,18 +214,19 @@ exports.postFeeds = functions.pubsub.schedule('every 1 hours').onRun((context) =
 
             let postPromises = []
             topics.forEach((topic, index) => {
-                let attachments = getAttachments(filteredFeeds[index]);
-                if (attachments.length > 0) {
-                    webhooks[index].forEach(webhook => {
-                        let options = getMessageOptions(webhook, topic['topic'], attachments.slice(0,10))
-                        let postPromise = new Promise(resolve => {
-                            request.post(options, (error, response, body) => {
-                                resolve(response)
+                if (filteredFeeds) {
+                    let attachments = getAttachments(filteredFeeds[index]);
+                    if (attachments.length > 0) {
+                        webhooks[index].forEach(webhook => {
+                            let options = getMessageOptions(webhook, topic['topic'], attachments.slice(0,10))
+                            let postPromise = new Promise(resolve => {
+                                request.post(options, (error, response, body) => {
+                                    resolve(response)
+                                })
                             })
+                            postPromises.push(postPromise)
                         })
-                        postPromises.push(postPromise)
-                    })
-                    
+                    }
                 }
             })
             return Promise.all(postPromises)
