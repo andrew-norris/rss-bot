@@ -14,6 +14,7 @@ const feedUrl = 'feedUrl';
 let Parser = require('rss-parser')
 let parser = new Parser()
 
+
 exports.redirect = functions.https.onRequest((req, res) => {
     console.log(req)
     let code = req.query.code;
@@ -59,6 +60,48 @@ setChannelPromise = function(response) {
         webhook_url: response.incoming_webhook.url
     });
 }
+
+exports.subscribe = functions.https.onRequest((req, res) => {
+    console.log(req.body);
+    if (req.body.text) {
+        console.log(req.body.text);
+    }
+    let requestText = req.body.text;
+    let topics = requestText.split(' ');
+    let channelId = req.body.channel_id;
+    let responseUrl = req.body.response_url;
+    let channelName = req.body.channel_name;
+    console.log(topics)
+
+    firestore.collection('channels').doc(channelId)
+    .get()
+    .then(channel => {
+        res.send('Subscribed');
+        return channel.data().webhook_url
+    })
+    .then(webhookUrl => {
+        let subscribePromises = [];
+        topics.forEach(topic => {
+            let subscribePromise = firestore.collection('topics').doc(topic)
+            .collection('subscribed-channels').doc(channelId)
+            .set({
+                channel_name: channelName,
+                webhook_url: webhookUrl
+            });
+            subscribePromises.push(subscribePromise)
+        });
+        console.log(subscribePromises.length)
+        return Promise.all(subscribePromises);
+    })
+    .then(result => {
+        console.log(result);
+        return result;
+    })
+    .catch(error => {
+        console.log(error)
+        res.end()
+    })
+});
 
 exports.postFeeds = functions.pubsub.schedule('every 1 hours').onRun((context) => {
         let topicsPromise = firestore.collection('topics').get().then(topicQuerySnapShot => {
