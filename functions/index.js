@@ -103,7 +103,7 @@ exports.subscribe = functions.https.onRequest((req, res) => {
     })
 });
 
-exports.postFeeds = functions.pubsub.schedule('every 1 hour').onRun((context) => {
+exports.postFeeds = functions.pubsub.schedule('every 1 hours').onRun((context) => {
         let topicsPromise = firestore.collection('topics').get().then(topicQuerySnapShot => {
             let topics = topicQuerySnapShot.docs.map(topic => {
                 return {
